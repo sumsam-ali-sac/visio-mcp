@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.output.vsdx import shapes
 from visio_mcp.output.vsdx.cells import V_MIDDLE, attrs, cell, length
 from visio_mcp.output.vsdx.page import Page

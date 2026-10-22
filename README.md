@@ -245,17 +245,23 @@ See [`examples/`](examples) for every diagram type.
 
 ## How it works
 
+Each package owns one concern and each file does one job. A diagram flows top to bottom:
+
 ```
-spec.py      DiagramSpec, patch ops                  lint.py     normalize + rule findings
-rules/       ground rules per diagram type (md)     catalog.py  172 kinds -> Visio masters
-style.py     themes, casing, text metrics, sizing   layout.py   group-aware layered layout + routing
-plan.py      spec -> DiagramPlan (every visual decision, made once)
-render.py    plan -> Visio over COM (live)          vsdx_writer.py  plan -> native .vsdx
-svg.py       plan -> SVG / PNG / HTML preview       engine.py   picks Visio or native, saves, exports
-scanner/     repo discovery, profiling, sandboxed file access, no-AI drafts
-ai/          providers (Claude, Gemini, Azure OpenAI, OpenAI, Ollama) and the exploring agent
-cli/         the visio-ai terminal app             server.py   the MCP server
+src/visio_mcp/
+  repo/      find and profile repos, digest them for an AI, sandboxed file access, no-AI drafts
+  ai/        providers (Claude, Gemini, Azure OpenAI, OpenAI, Ollama) and the exploring agent
+  spec/      the DiagramSpec contract and patch ops
+  lint/      resolve 'auto', fix casing, check the ground rules in rules/
+  catalog/   179 shape kinds -> Visio masters        icons/   official Azure / AWS / GCP icons
+  style/     themes, casing, text metrics, sizes     layout/  group-aware layout + edge routing
+  plan/      spec -> DiagramPlan: every visual decision, made once
+  output/    visio/ (live Visio over COM)  vsdx/ (native .vsdx)  svg/ (SVG, HTML, PNG)  drawer.py
+  cli/       the visio-ai terminal app               mcp/     the MCP server
 ```
+
+Details, the dependency rules between packages and how to extend each one:
+[docs/architecture.md](docs/architecture.md).
 
 ## Development
 

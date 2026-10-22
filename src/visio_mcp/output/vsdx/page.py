@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Literal
 
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.output.vsdx.cells import attrs
 
 STYLE_NONE = 0  # 'No Style': root of every inheritance chain, defines every cell

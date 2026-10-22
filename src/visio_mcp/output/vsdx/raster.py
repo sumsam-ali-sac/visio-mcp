@@ -1,4 +1,4 @@
-"""Bitmaps for icons: PNG as-is, SVG rasterized once into the cache."""
+"""Bitmaps for icons in the .vsdx: PNG as-is, SVG rasterized once into the icon cache."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 
 from visio_mcp.icons.names import normalize
 from visio_mcp.icons.paths import cache_dir
+from visio_mcp.output.svg.raster import find_chromium
 
 RASTER_PX = 256  # SVG icons are rasterized at this size for .vsdx bitmaps
 
@@ -22,14 +23,12 @@ def _png_target(svg: Path) -> Path:
 def _raster_playwright(jobs: list[tuple[Path, Path]]) -> None:
     from playwright.sync_api import sync_playwright  # type: ignore[import-not-found]
 
-    from visio_mcp.output.svg import _find_chromium
-
     args = ["--no-sandbox", "--disable-gpu"]
     with sync_playwright() as pw:
         try:
             browser = pw.chromium.launch(args=args)
         except Exception:
-            exe = _find_chromium()
+            exe = find_chromium()
             if not exe:
                 raise
             browser = pw.chromium.launch(executable_path=exe, args=args)

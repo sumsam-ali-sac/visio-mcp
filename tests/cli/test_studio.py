@@ -123,8 +123,8 @@ def test_studio_flow_offline_end_to_end(capsys, monkeypatch, tmp_path):
     monkeypatch.setattr(prompts, "select", lambda msg, *a, **k: answers[msg])
     monkeypatch.setattr(prompts, "text", lambda msg, *a, **k: answers.get(msg, ""))
     monkeypatch.setattr(prompts, "confirm", lambda *a, **k: False)
-    monkeypatch.setattr(flow.aiconfig, "load_config", lambda: flow.aiconfig.AppConfig())
-    monkeypatch.setattr(flow.aiconfig, "save_config", lambda cfg: None)
+    monkeypatch.setattr(flow.config, "load_config", lambda: flow.config.AppConfig())
+    monkeypatch.setattr(flow.config, "save_config", lambda cfg: None)
     monkeypatch.setattr(flow, "_make_drawer", lambda args, cfg: Drawer(backend=FakeVisio()))
 
     class Args:

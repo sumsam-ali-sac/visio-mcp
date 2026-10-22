@@ -6,12 +6,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from visio_mcp.ai import config as aiconfig
+from visio_mcp.ai import config
 from visio_mcp.cli import ui
 from visio_mcp.cli.studio.drawing import draw, result_panel, spec_tree
 from visio_mcp.cli.studio.explore import offline_draft, repo_table, run_agent, scan_paths
 from visio_mcp.cli.studio.session import Session, suggested_type
-from visio_mcp.output.drawer import Drawer, open_file
+from visio_mcp.output.drawer import Drawer
+from visio_mcp.output.files import open_file
 from visio_mcp.spec import DiagramSpec
 
 EXAMPLES_DIR = Path(__file__).resolve().parents[4] / "examples"
@@ -48,9 +49,9 @@ def _provider(args: Any, cfg: Any) -> Any:
     """The provider config to use: --provider/--model override the saved one."""
     pc = cfg.provider
     if args.provider:
-        found = {p.provider: p for p in aiconfig.detect_providers(probe_ollama=args.provider == "ollama")}
-        pc = found.get(args.provider) or aiconfig.ProviderConfig(
-            provider=args.provider, model=aiconfig.DEFAULT_MODELS.get(args.provider, ""))
+        found = {p.provider: p for p in config.detect_providers(probe_ollama=args.provider == "ollama")}
+        pc = found.get(args.provider) or config.ProviderConfig(
+            provider=args.provider, model=config.DEFAULT_MODELS.get(args.provider, ""))
     if pc and args.model:
         pc.model = args.model
     return pc
@@ -58,7 +59,7 @@ def _provider(args: Any, cfg: Any) -> Any:
 
 def run(args: Any) -> int:
     ui.banner()
-    cfg = aiconfig.load_config()
+    cfg = config.load_config()
     s = Session(theme=args.theme or cfg.theme or "auto", focus=args.focus, out_dir=_out_dir(args))
     s.repos = scan_paths(args.path)
     ui.console.print(repo_table(s.repos))

@@ -29,7 +29,6 @@ sources    vendor page scraping, the PyPI `diagrams` wheel, opening a URL/zip/fo
 pack       selecting icons from a source and writing a pack
 install    install, remove, status, IconInstallError
 lookup     installed, missing_for, find, explain, resolve_image
-raster     png_for, pngs_for
 """
 
 from visio_mcp.icons.install import IconInstallError, install, remove, status
@@ -37,10 +36,9 @@ from visio_mcp.icons.lookup import explain, find, installed, missing_for, resolv
 from visio_mcp.icons.names import ICON_NAMES, STAND_INS, normalize
 from visio_mcp.icons.paths import cache_dir
 from visio_mcp.icons.providers import PROVIDER_NAMES, PROVIDERS
-from visio_mcp.icons.raster import png_for, pngs_for
 
 __all__ = [
     "ICON_NAMES", "PROVIDERS", "PROVIDER_NAMES", "STAND_INS", "IconInstallError", "cache_dir", "explain", "find",
-    "install", "installed", "missing_for", "normalize", "png_for", "pngs_for", "remove", "resolve_image",
+    "install", "installed", "missing_for", "normalize", "remove", "resolve_image",
     "status",
 ]

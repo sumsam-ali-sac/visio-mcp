@@ -9,9 +9,10 @@ from typing import Any
 from rich.text import Text
 
 from visio_mcp import icons
-from visio_mcp.ai import config as aiconfig
+from visio_mcp.ai import config
 from visio_mcp.cli import coding_apps, ui
-from visio_mcp.output.drawer import default_out_dir, visio_available
+from visio_mcp.output.files import default_out_dir
+from visio_mcp.output.detect import visio_available
 
 
 def _mark(good: bool, text: str, fix: str = "") -> Text:
@@ -28,12 +29,12 @@ def _has_playwright() -> bool:
 
 
 def _provider_row() -> tuple[str, Text]:
-    cfg = aiconfig.load_config()
+    cfg = config.load_config()
     if cfg.provider:
-        key = bool(aiconfig.resolve_key(cfg.provider)) or cfg.provider.provider == "ollama"
+        key = bool(config.resolve_key(cfg.provider)) or cfg.provider.provider == "ollama"
         return "AI provider", _mark(key, f"{cfg.provider.provider} · {cfg.provider.model}",
                                     "API key missing: run visio-ai setup")
-    found = aiconfig.detect_providers(probe_ollama=True)
+    found = config.detect_providers(probe_ollama=True)
     return "AI provider", _mark(bool(found), "not set" + (
         f" (detected: {', '.join(p.provider for p in found)})" if found else ""), "run visio-ai setup")
 
@@ -49,7 +50,7 @@ def run(args: Any) -> int:
         ("System", f"{platform.system()} {platform.release()} · Python {platform.python_version()}"),
         ("Visio desktop", _mark(has_visio, "installed — diagrams draw live" if has_visio else "not found",
                                 "native .vsdx output will be used (opens in Visio / Visio for the web)")),
-        ("Config", str(aiconfig.CONFIG_PATH)),
+        ("Config", str(config.CONFIG_PATH)),
         _provider_row(),
         ("AI coding apps", _mark(bool(tools), ", ".join(t.name for t in tools) or "none",
                                  "optional: Claude Code, Gemini CLI, Codex, Copilot CLI")),

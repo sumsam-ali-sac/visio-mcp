@@ -12,7 +12,8 @@ from visio_mcp import lint, style
 from visio_mcp.cli import prompts, ui
 from visio_mcp.cli.studio.drawing import draw, result_panel
 from visio_mcp.cli.studio.session import Session
-from visio_mcp.output.drawer import Drawer, open_file, slug
+from visio_mcp.output.drawer import Drawer
+from visio_mcp.output.files import open_file, slug
 from visio_mcp.spec import DiagramSpec
 
 LAYOUTS = ["flowchart-lr", "flowchart-tb", "swimlane-lr", "swimlane-tb", "tree-tb", "tree-lr",

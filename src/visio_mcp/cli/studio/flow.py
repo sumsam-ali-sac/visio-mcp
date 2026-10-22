@@ -8,7 +8,7 @@ from typing import Any
 from rich.text import Text
 
 from visio_mcp import icons
-from visio_mcp.ai import config as aiconfig
+from visio_mcp.ai import config
 from visio_mcp.cli import coding_apps, prompts, ui
 from visio_mcp.cli.commands.handoff import launch
 from visio_mcp.cli.studio.drawing import draw, result_panel, spec_tree
@@ -16,7 +16,8 @@ from visio_mcp.cli.studio.explore import explore, repo_table, scan_paths
 from visio_mcp.cli.studio.refine import pick_theme, refine_loop
 from visio_mcp.cli.studio.session import Session, provider_label, suggested_type, type_info
 from visio_mcp.cli.studio.setup_wizard import setup_wizard
-from visio_mcp.output.drawer import Drawer, default_out_dir, open_file
+from visio_mcp.output.drawer import Drawer
+from visio_mcp.output.files import default_out_dir, open_file
 from visio_mcp.spec import DiagramSpec
 
 _icons_offered: set[str] = set()
@@ -25,7 +26,7 @@ _icons_offered: set[str] = set()
 def studio(args: Any) -> int:
     """Run the interactive studio; returns an exit code."""
     ui.banner()
-    cfg = aiconfig.load_config()
+    cfg = config.load_config()
     drawer = _make_drawer(args, cfg)
     _status_line(drawer, cfg)
 
@@ -123,7 +124,7 @@ def _remember_path(cfg: Any, raw: str) -> None:
     p = str(Path(raw.strip().strip('"')).expanduser().resolve())
     cfg.recent_paths = [p] + [x for x in cfg.recent_paths if x != p][:7]
     try:
-        aiconfig.save_config(cfg)
+        config.save_config(cfg)
     except OSError:
         pass
 

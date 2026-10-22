@@ -84,3 +84,11 @@ class Theme:
 
     def group_style(self, kind: str) -> GroupStyle:
         return self.groups.get(kind) or self.groups["generic"]
+
+
+@dataclass(frozen=True)
+class TextRun:
+    """A piece of text with its own style; runs are joined as-is (include '\\n' yourself)."""
+
+    text: str
+    style: TextStyle

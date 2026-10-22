@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Callable
 
 from visio_mcp import catalog
-from visio_mcp.output.visio.backend import TextRun, VisioBackend
+from visio_mcp.output.visio.backend import VisioBackend
+from visio_mcp.style import TextRun
 from visio_mcp.output.visio.inspect import find_overlaps
 from visio_mcp.plan import DiagramPlan, PlannedNode, build_plan
 from visio_mcp.spec import DiagramSpec, RenderResult

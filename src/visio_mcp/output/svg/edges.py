@@ -7,7 +7,7 @@ import math
 from visio_mcp.output.svg.canvas import Canvas
 from visio_mcp.output.svg.markup import PX, esc, num, snap, stroke_attrs
 from visio_mcp.output.svg.text import block_h, layout_text, text_svg
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.plan import PlannedEdge
 
 LABEL_MAX_W = 2.2 * PX

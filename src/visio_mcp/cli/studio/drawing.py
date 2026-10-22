@@ -13,8 +13,9 @@ from rich.tree import Tree
 from visio_mcp import lint
 from visio_mcp.cli import ui
 from visio_mcp.cli.studio.session import Session
-from visio_mcp.output.drawer import DrawOutput, Drawer
-from visio_mcp.output.drawer import default_out_dir, slug
+from visio_mcp.output.result import DrawOutput
+from visio_mcp.output.drawer import Drawer
+from visio_mcp.output.files import default_out_dir, slug
 from visio_mcp.spec import DiagramSpec
 
 

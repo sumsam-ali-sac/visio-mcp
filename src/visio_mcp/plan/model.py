@@ -8,7 +8,7 @@ from typing import Literal
 
 from visio_mcp.catalog import Shape
 from visio_mcp.layout import Point, Rect
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import EdgeStyle, GroupStyle, ShapeStyle, Theme
 

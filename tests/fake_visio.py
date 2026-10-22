@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from visio_mcp.output.visio.backend import ShapeInfo, TextRun
+from visio_mcp.output.visio.backend import ShapeInfo
+from visio_mcp.style import TextRun
 from visio_mcp.style import EdgeStyle, GroupStyle, ShapeStyle
 
 DEFAULT_MASTERS = {

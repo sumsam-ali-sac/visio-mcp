@@ -18,7 +18,8 @@ from typing import Any
 import pywintypes
 
 from visio_mcp.output.visio import app, connectors, containers, document, names, page, shapes, stencils, text
-from visio_mcp.output.visio.backend import Align, ArrowMode, LinePattern, ShapeInfo, TextRun
+from visio_mcp.output.visio.backend import Align, ArrowMode, LinePattern, ShapeInfo
+from visio_mcp.style import TextRun
 from visio_mcp.output.visio.cells import rgb
 from visio_mcp.output.visio.errors import guard
 from visio_mcp.output.visio.page import BACKGROUND

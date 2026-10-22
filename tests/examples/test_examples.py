@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp.mcp import guide as prompts
+from visio_mcp.mcp import guide
 from visio_mcp.spec import DiagramSpec
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,7 +21,7 @@ def test_example_is_valid_spec(path: Path):
 
 @pytest.mark.parametrize("source", ["prompt", "repo"])
 def test_diagram_prompt_mentions_subject(source: str):
-    text = prompts.diagram_prompt("payments-service", source=source)  # type: ignore[arg-type]
+    text = guide.diagram_prompt("payments-service", source=source)  # type: ignore[arg-type]
     assert text.strip()
     assert "payments-service" in text
 
@@ -36,6 +36,6 @@ def test_example_follows_the_rules(path: Path):
 
 
 def test_guide_mentions_tools():
-    assert "render_diagram" in prompts.GUIDE
-    assert "patch_diagram" in prompts.GUIDE
-    assert "get_diagram_rules" in prompts.GUIDE
+    assert "render_diagram" in guide.GUIDE
+    assert "patch_diagram" in guide.GUIDE
+    assert "get_diagram_rules" in guide.GUIDE

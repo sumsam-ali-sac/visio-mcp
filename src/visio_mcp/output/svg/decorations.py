@@ -7,7 +7,7 @@ from visio_mcp.output.svg.canvas import Canvas
 from visio_mcp.output.svg.markup import PT, PX, esc, num, shape_attrs, snap, stroke_attrs
 from visio_mcp.output.svg.shapes import shape
 from visio_mcp.output.svg.text import block_h, layout_text, single_line, text_svg
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.plan import LegendEntry, PlannedGroup, TextBlock
 from visio_mcp.style import ShapeStyle, replace
 

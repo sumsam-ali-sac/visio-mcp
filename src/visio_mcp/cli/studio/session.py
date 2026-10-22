@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from visio_mcp import rules
-from visio_mcp.output.drawer import DrawOutput
+from visio_mcp.output.result import DrawOutput
 from visio_mcp.repo import RepoInfo
 from visio_mcp.spec import DiagramSpec
 

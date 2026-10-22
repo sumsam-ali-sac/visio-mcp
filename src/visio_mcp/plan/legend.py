@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from visio_mcp.layout import Rect
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.plan.model import LegendEntry, TextBlock
 from visio_mcp.plan.runs import line_width
 from visio_mcp.spec import DiagramSpec

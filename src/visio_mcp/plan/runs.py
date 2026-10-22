@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from visio_mcp import catalog
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.style import TextStyle, Theme, text_width
 
 

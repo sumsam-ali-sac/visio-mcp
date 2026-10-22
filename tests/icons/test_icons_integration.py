@@ -82,7 +82,8 @@ def test_vsdx_without_icons_has_no_media(tmp_path):
 def test_vsdx_svg_icon_falls_back_to_glyph_without_rasterizer(tmp_path, monkeypatch, svg_bytes):
     mine = tmp_path / "mine.svg"
     mine.write_bytes(svg_bytes)
-    monkeypatch.setattr(icons, "pngs_for", lambda paths: {Path(p): None for p in paths})
+    from visio_mcp.output.vsdx import raster
+    monkeypatch.setattr(raster, "pngs_for", lambda paths: {Path(p): None for p in paths})
     path = vsdx_writer.write_vsdx(build_plan(_cloud_spec(icon=str(mine))), tmp_path / "d.vsdx")
     with zipfile.ZipFile(path) as z:
         page = z.read("visio/pages/page1.xml").decode()

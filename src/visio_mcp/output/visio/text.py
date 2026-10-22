@@ -7,7 +7,7 @@ from typing import Any, Callable
 import pythoncom
 import pywintypes
 
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.output.visio.cells import (
     CHAR_COLOR,
     CHAR_FONT,

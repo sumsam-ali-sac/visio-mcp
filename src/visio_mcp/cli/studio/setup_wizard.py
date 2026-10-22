@@ -6,7 +6,7 @@ from typing import Any
 
 from rich.text import Text
 
-from visio_mcp.ai import config as aiconfig
+from visio_mcp.ai import config
 from visio_mcp.cli import prompts, ui
 from visio_mcp.cli.studio.session import provider_label
 
@@ -17,23 +17,23 @@ PROVIDERS = [("anthropic", "Claude (Anthropic)"), ("gemini", "Google Gemini"), (
 def setup_wizard(cfg: Any) -> Any:
     """Walk through provider, credentials and model; returns the (possibly updated) config."""
     ui.console.print(ui.panel(Text("Pick the model that explores your code. Keys stay on this machine "
-                                   f"({aiconfig.CONFIG_PATH}).", style="muted"), title="AI provider"))
-    detected = {p.provider: p for p in aiconfig.detect_providers()}
+                                   f"({config.CONFIG_PATH}).", style="muted"), title="AI provider"))
+    detected = {p.provider: p for p in config.detect_providers()}
     choices = [prompts.choice(label, key, "detected in your environment" if key in detected else "")
                for key, label in PROVIDERS]
     provider = prompts.select("Provider", choices)
-    pc = detected.get(provider) or aiconfig.ProviderConfig(provider=provider,
-                                                          model=aiconfig.DEFAULT_MODELS.get(provider, ""))
+    pc = detected.get(provider) or config.ProviderConfig(provider=provider,
+                                                          model=config.DEFAULT_MODELS.get(provider, ""))
 
     if provider == "azure":
         pc.endpoint = prompts.text("Azure OpenAI endpoint", default=pc.endpoint or "https://<resource>.openai.azure.com")
         pc.deployment = prompts.text("Deployment name", default=pc.deployment or "")
         pc.api_version = prompts.text("API version", default=pc.api_version or "2024-10-21")
         pc.model = pc.deployment or pc.model
-    if provider != "ollama" and not (pc.api_key or aiconfig.resolve_key(pc)):
+    if provider != "ollama" and not (pc.api_key or config.resolve_key(pc)):
         pc.api_key = prompts.password("API key") or None
     if provider != "azure":
-        models = aiconfig.suggested_models(provider) or [pc.model]
+        models = config.suggested_models(provider) or [pc.model]
         pick = prompts.select("Model", [prompts.choice(m, m, "default" if m == pc.model else "") for m in models]
                               + [prompts.choice("Other…", "")], default=pc.model if pc.model in models else None)
         pc.model = pick or prompts.text("Model id", default=pc.model)
@@ -42,8 +42,8 @@ def setup_wizard(cfg: Any) -> Any:
         if not prompts.confirm("Save it anyway?", default=False):
             return cfg
     cfg.provider = pc
-    aiconfig.save_config(cfg)
-    ui.ok(f"Saved to {aiconfig.CONFIG_PATH}")
+    config.save_config(cfg)
+    ui.ok(f"Saved to {config.CONFIG_PATH}")
     return cfg
 
 

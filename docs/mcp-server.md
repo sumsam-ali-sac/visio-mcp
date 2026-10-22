@@ -88,8 +88,8 @@ apply:
 | `move` | `id`, `x`, `y` (inches; applied after the redraw, not kept on the next relayout) |
 
 A diagram rendered in the session is edited as a spec and redrawn, so layout and styling stay
-consistent. A diagram opened from disk is edited shape by shape (only label, fill, remove, add,
-move and relayout apply).
+consistent. A diagram opened from disk is edited shape by shape (only label, fill, remove, add
+and move apply; layout and theme changes need a diagram drawn from a spec).
 
 **Resources:** `visio://rules/{diagram_type}` — the same text as `get_diagram_rules`.
 

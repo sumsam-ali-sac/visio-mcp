@@ -21,9 +21,9 @@ def build_page(plan: DiagramPlan) -> Page:
     page = Page()
     wanted = [n.image for n in plan.nodes if n.image is not None and n.geometry == "icon"]
     if wanted:
-        from visio_mcp import icons
+        from visio_mcp.output.vsdx import raster
 
-        page.pngs = icons.pngs_for(wanted)  # SVG icons rasterized once; None -> glyph tile
+        page.pngs = raster.pngs_for(wanted)  # SVG icons rasterized once; None -> glyph tile
     draw_background(page, plan)
     for g in sorted(plan.groups, key=lambda g: g.depth):
         draw_group(page, g)

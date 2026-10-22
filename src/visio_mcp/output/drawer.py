@@ -28,7 +28,6 @@ from visio_mcp.spec import DiagramSpec, PatchOp, RenderResult
 from visio_mcp.spec.edit import apply_to_spec
 
 # default_out_dir, open_file, slug and visio_available are re-exported for the cli/mcp call sites
-__all__ = ["DrawOutput", "Drawer", "default_out_dir", "open_file", "slug", "visio_available"]
 
 Target = Literal["auto", "visio", "native"]
 

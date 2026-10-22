@@ -12,7 +12,8 @@ from visio_mcp import catalog, lint, rules, style
 from visio_mcp.output.visio import com_thread
 from visio_mcp.mcp import guide, state
 from visio_mcp.mcp.state import drawer
-from visio_mcp.output.drawer import DrawOutput, default_out_dir, slug
+from visio_mcp.output.result import DrawOutput
+from visio_mcp.output.files import default_out_dir, slug
 from visio_mcp.spec import DiagramSpec, PatchOp
 
 Format = Literal["png", "svg", "pdf", "jpg", "html"]

@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from visio_mcp import lint
 from visio_mcp.layout import Rect, compute_layout
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.plan.kinds import HasMaster, resolve_nodes
 from visio_mcp.plan.legend import legend_entries, legend_size, place_legend
 from visio_mcp.plan.model import (

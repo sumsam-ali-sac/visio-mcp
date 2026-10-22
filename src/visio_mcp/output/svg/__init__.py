@@ -12,6 +12,5 @@ from visio_mcp.output.svg.html import write_html
 from visio_mcp.output.svg.raster import find_chromium, svg_to_png
 from visio_mcp.output.svg.render import render_svg
 
-_find_chromium = find_chromium  # icons.raster still imports the old name
 
 __all__ = ["find_chromium", "render_svg", "svg_to_png", "write_html"]

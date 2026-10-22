@@ -14,6 +14,7 @@ from visio_mcp.style.model import (
     GroupStyle,
     LinePattern,
     ShapeStyle,
+    TextRun,
     TextStyle,
     Theme,
 )
@@ -34,6 +35,6 @@ from visio_mcp.style.themes import (
 
 __all__ = [
     "AWS", "AZURE", "BLUEPRINT", "C4", "CATEGORIES", "DARK", "GCP", "GEOMETRY_MIN", "ICON_SIZE", "MONO",
-    "PROFESSIONAL", "THEMES", "EdgeStyle", "GroupStyle", "LinePattern", "NodeSize", "ShapeStyle", "TextStyle",
+    "PROFESSIONAL", "THEMES", "EdgeStyle", "GroupStyle", "LinePattern", "NodeSize", "ShapeStyle", "TextRun", "TextStyle",
     "Theme", "get_theme", "node_size", "replace", "sentence_case", "text_width", "title_case", "wrap",
 ]

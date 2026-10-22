@@ -1,80 +1,95 @@
 # How it works
 
+A diagram flows through the packages in one direction. Each package owns one concern and each
+file does one job (its first line says which).
+
 ```
-            visio-ai (terminal)                         any MCP client
-                  │                                           │
-   scanner ──► ai.agent (Claude/Gemini/Azure/OpenAI/Ollama)    │
-   (repos,       explores code with sandboxed tools           │
-    digest)            │                                      │
-                       ▼                                      ▼
-                  DiagramSpec  ◄──────────────────────── server.py tools
-                       │
-         lint.normalize (type, layout, theme, casing) + lint.lint (rule findings)
-                       │
-   plan.build_plan ── catalog (kind → master/geometry/category) ── icons (official cloud icons)
-                  ├── style  (theme, fonts, text metrics, node sizes)
-                  ├── layout (group-aware layered/tree/swimlane/radial/grid + orthogonal routes)
-                  └── title block, legend, page size
-                       │
-                  DiagramPlan  (every visual decision, made once)
-                       │
-        engine.Drawer ─┼─► render.emit_visio ─► backend (visio_com over COM: live / attach / hidden)
-                       ├─► vsdx_writer      ─► native .vsdx (no Visio needed)
-                       └─► svg              ─► SVG, HTML viewer, PNG
+  visio-ai (cli/)                                        any MCP client (mcp/)
+       │                                                         │
+  repo/ ── profile repos, digest, sandboxed file access          │
+       │                                                         │
+  ai/   ── a model explores the code with tools ──► DiagramSpec ◄┘     spec/  the contract
+                                                       │
+                                  lint/  ── resolve 'auto', fix casing, check the rules (rules/)
+                                                       │
+                                  plan/  ── catalog/ (kinds → masters), icons/ (official icons),
+                                            style/ (themes, text, sizes), layout/ (positions, routes)
+                                                       │
+                                                  DiagramPlan   every visual decision, made once
+                                                       │
+                                  output/drawer ──┬──► output/visio/  live Visio over COM
+                                                  ├──► output/vsdx/   native .vsdx, no Visio
+                                                  └──► output/svg/    SVG, HTML viewer, PNG
 ```
 
-## Modules
+Lower packages never import higher ones: `spec` depends on nothing; `catalog`, `rules`, `style`
+depend only on `spec`; `lint` and `icons` on those; `layout` on `spec` and `style`; `plan` on all
+of the above; `output` on `plan`; `repo`, `ai`, `cli` and `mcp` sit on top.
 
-| Module | Responsibility |
-|---|---|
-| `spec.py` | `DiagramSpec`, nodes, edges, groups, patch ops, `RenderResult` (pydantic) |
-| `lint.py` | `normalize` (resolve `auto`, casing, labels) and `lint`/`findings` (rule codes) |
-| `rules.py`, `rules/*.md` | Ground rules per diagram type and cloud provider |
-| `catalog.py` | 179 kinds: description, category, geometry, provider, base kind, glyph, Visio master candidates; `resolve`, `lookup`, `describe_kinds` |
-| `icons.py` | Install, index and look up official cloud icon packs |
-| `style.py` | Themes, `title_case`/`sentence_case`, text metrics, `node_size` |
-| `layout/` | `compute_layout(spec, sizes, group_styles, layout)` → node rects, group frames, routes |
-| `plan.py` | `build_plan(spec, has_master)` → `DiagramPlan` |
-| `geometry_check.py` | `audit(plan)`: overlaps, group containment, edges through nodes, off-page |
-| `render.py` | Draws a plan through the `VisioBackend` protocol, in watchable order |
-| `backend.py` | The `VisioBackend` protocol (shapes addressed by spec id) |
-| `visio_com.py` | `VisioBackend` over COM (pywin32); live, attach and hidden modes |
-| `com_thread.py` | Keeps every COM call on one thread |
-| `vsdx_writer.py` | Writes a `.vsdx` package from a plan, standard library only |
-| `svg.py` | SVG, HTML viewer, PNG rasterization |
-| `engine.py` | `Drawer`: Visio or native, render/patch/open/export, file naming |
-| `edit.py` | Patch ops on a spec (redraw) or on shapes (opened files); `inspect` |
-| `scanner/` | Repo discovery, profiling (stack, cloud, IaC, CI, data stores), digests, `RepoFS`, no-AI drafts |
-| `ai/` | Provider config, provider adapters, the exploring `DiagramAgent` and its prompts |
-| `cli/` | The `visio-ai` app: studio, commands, handoff, UI kit |
-| `server.py` | The MCP server |
+## Packages
+
+| Package | Job | Start reading at |
+|---|---|---|
+| `spec/` | The diagram contract: `DiagramSpec`, nodes, edges, groups (`diagram.py`), patch ops (`patch.py`), `RenderResult` (`result.py`), applying patches (`edit.py`) | `diagram.py` |
+| `catalog/` | 179 shape kinds: data types (`model.py`), stencils, generic and cloud kinds, aliases, `lookup`/`resolve`, listings for prompts | `resolve.py` |
+| `rules/` | Ground rules per diagram type and cloud provider (markdown) and their loader | `__init__.py` |
+| `lint/` | `normalize` (infer type/layout/theme, casing) and `lint` (one `checks_*.py` file per family of rules, run by `report.py`) | `normalize.py`, `report.py` |
+| `style/` | Style dataclasses (`model.py`), the eight themes (`themes.py`), casing and text metrics (`text.py`), node footprints (`sizing.py`) | `themes.py` |
+| `icons/` | Official Azure/AWS/GCP icon packs: where they come from (`sources.py`), installing (`install.py`), the kind → icon table (`names.py`), lookup, rasterizing | `lookup.py` |
+| `layout/` | Group-aware layout engines (layered, compound, tree, swimlane, radial, manual) and routing; `compute.py` picks one | `compute.py` |
+| `plan/` | `build_plan`: resolve kinds, size and lay out nodes, style everything, title and legend; `audit.py` checks the geometry | `build.py` |
+| `output/` | `Drawer` (`drawer.py`) picks live Visio or native output; `native.py`, `files.py`, `detect.py`, `result.py` | `drawer.py` |
+| `output/visio/` | The `VisioBackend` protocol (`backend.py`), `VisioCom` composed from app, document, page, shapes, text, connectors, containers and cells modules; drawing a plan (`draw.py`); editing opened files; `com_thread.py` | `draw.py`, `com.py` |
+| `output/vsdx/` | Writing a `.vsdx` package: OPC parts, geometry sections, nodes, connectors, containers, images, decorations | `writer.py` |
+| `output/svg/` | SVG rendering (canvas, shapes, nodes, edges, decorations, text), the HTML viewer, PNG rasterizing | `render.py` |
+| `repo/` | Discover and profile repos (`detect/` has one detector per concern, IaC parsers under `detect/iac/`), digests for the AI, sandboxed `RepoFS`, secret redaction, no-AI drafts (`draft/`) | `discover.py`, `detect/scan.py` |
+| `ai/` | Provider config, provider adapters (`providers/`: one file per vendor plus errors/retry and the factory), the agent (`agent.py`) with its tools, submission checks and prompts | `agent.py` |
+| `cli/` | `visio-ai`: the parser (`parser.py`), dispatch (`main.py`), one module per command (`commands/`), the interactive studio (`studio/`), terminal UI and prompts | `main.py`, `studio/flow.py` |
+| `mcp/` | The MCP server: tool wrappers (`server.py`), the lazily created Drawer (`state.py`), the authoring guide | `server.py` |
+
+Tests mirror the packages: `tests/<package>/test_<module>.py` (pytest runs with
+`--import-mode=importlib`). `tests/fake_visio.py` is an in-memory `VisioBackend` that records every
+call, so everything except the real COM layer is tested without Visio.
 
 ## Extending
 
-**A shape kind.** Add a `_k(...)` (generic) or `_c(...)` (cloud) entry in `catalog.py` with a
-category from `style.CATEGORIES`, a geometry from `style.GEOMETRY_MIN`, Visio master candidates
-(first available wins) and, for cloud kinds, a base kind and glyph. Add its icon names in
-`icons.py`. Run `uv run pytest tests/test_catalog.py tests/test_icons.py` and
+**A shape kind.** Generic kinds live in `catalog/generic.py`, cloud kinds in `catalog/cloud.py`:
+give a category from `style.CATEGORIES`, a geometry from `style.GEOMETRY_MIN`, Visio master
+candidates (first available wins) and, for cloud kinds, a base kind and glyph. Add its icon
+names to `icons/names.py`. Run `uv run pytest tests/catalog tests/icons` and
 `uv run python scripts/gen_docs.py`.
 
-**A theme.** Add a `Theme` in `style.py` (style every category and group kind, or derive from an
-existing theme with `replace`) and register it in `THEMES`.
+**A theme.** Add a `Theme` to `style/themes.py` (derive from an existing one with `replace`)
+and register it in `THEMES`.
 
-**A diagram type.** Add it to `DiagramType` in `spec.py`, write `rules/<type>.md` (start with a
-`**Use when:**` line, end with a JSON example), teach `lint.normalize` how to infer it and which
-layout/theme it gets, and add rules to `lint.py` if needed.
+**A diagram type.** Add it to `DiagramType` in `spec/diagram.py`, write `rules/<type>.md`
+(start with a `**Use when:**` line, end with a JSON example), teach `lint/infer.py` how to
+recognize it and which layout it gets, and add checks in the matching `lint/checks_*.py`.
 
-**A layout.** Add a module in `layout/` returning node rects, group frames and routes; register
-it in `compute_layout`. `tests/test_layout.py` runs `geometry_check.audit` on every example under
-every layout.
+**A lint rule.** Write a check function in the right `lint/checks_*.py`, add it to `CHECKS` in
+`lint/report.py` and its code to `RULE_CODES` in `lint/finding.py`.
+
+**A layout.** Add an engine module in `layout/` and route the preset to it in
+`layout/compute.py`. `tests/plan/test_audit.py` audits every example under every layout.
+
+**An output format.** Write an emitter that takes a `DiagramPlan` (see `output/svg/render.py`
+for the smallest one) and call it from `output/native.py`.
+
+**A repo detector.** Add a module to `repo/detect/` (or an IaC parser to `repo/detect/iac/`)
+and call it from `repo/detect/scan.py`.
 
 **An AI provider.** Implement `LLM.start(system, tools) -> Session` with `send_user` and
-`send_tool_results` in `ai/providers.py`, keeping the provider's native message history, and map
-errors to `LLMError`. Register it in `make_llm` and `ai/config.py`.
+`send_tool_results` in a new `ai/providers/<vendor>.py`, keeping the vendor's native message
+history, map its errors in `ai/providers/errors.py`, and register it in
+`ai/providers/factory.py` and `ai/config.py`.
+
+**A CLI command.** Add `cli/commands/<name>.py` with `run(args) -> int`, its flags in
+`cli/parser.py`, and a line in `cli/commands/help.py`.
 
 ## Tests
 
 ```powershell
-uv run pytest              # 1,200+ tests, no Visio needed (FakeVisio records every backend call)
-uv run pytest -m visio     # real Visio over COM, on Windows
+uv run pytest              # 1,200+ tests, no Visio needed
+uv run pytest -m visio     # the COM layer against real Visio, on Windows
+uv run python scripts/smoke.py   # every example drawn live, patched, inspected, exported
 ```

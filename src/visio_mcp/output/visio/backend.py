@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
-from visio_mcp.style import EdgeStyle, GroupStyle, ShapeStyle, TextStyle
+from visio_mcp.style import EdgeStyle, GroupStyle, ShapeStyle, TextRun
 
 LinePattern = Literal["solid", "dashed", "dotted"]
 ArrowMode = Literal["end", "both", "none"]
@@ -32,14 +32,6 @@ class ShapeInfo:
     height: float
     is_connector: bool = False
     is_container: bool = False
-
-
-@dataclass(frozen=True)
-class TextRun:
-    """A piece of text with its own style; runs are joined as-is (include '\\n' yourself)."""
-
-    text: str
-    style: TextStyle
 
 
 class VisioBackend(Protocol):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from visio_mcp.layout import Rect
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.output.vsdx import shapes
 from visio_mcp.output.vsdx.cells import V_MIDDLE, V_TOP, cell, color, length, num
 from visio_mcp.output.vsdx.geometry import H, geometry_xml, hline

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from visio_mcp.output.svg.markup import LINE_H, PT, PX, esc, font_stack, num
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.style import TextStyle, text_width
 
 

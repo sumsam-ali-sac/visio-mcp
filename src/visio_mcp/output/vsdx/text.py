@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from xml.sax.saxutils import escape
 
-from visio_mcp.output.visio.backend import TextRun
+from visio_mcp.style import TextRun
 from visio_mcp.output.vsdx.cells import H_ALIGN, cell, clean, color, points
 from visio_mcp.style import TextStyle
 

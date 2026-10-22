@@ -8,7 +8,8 @@ from typing import Any
 import pywintypes
 
 from visio_mcp.output.visio import formatting, text
-from visio_mcp.output.visio.backend import Align, ShapeInfo, TextRun
+from visio_mcp.output.visio.backend import Align, ShapeInfo
+from visio_mcp.style import TextRun
 from visio_mcp.output.visio.cells import VERT_MIDDLE, inch, set_cell
 from visio_mcp.output.visio.names import is_container, set_name
 from visio_mcp.output.visio.text import FontFormula

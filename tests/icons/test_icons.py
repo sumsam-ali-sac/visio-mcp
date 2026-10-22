@@ -142,12 +142,6 @@ def test_custom_icon_wins(tmp_path, make_zip, diagrams_names, svg_bytes):
     assert icons.resolve_image(None, "server") is None
 
 
-def test_png_for_png_is_itself(tmp_path, png_bytes):
-    p = tmp_path / "a.png"
-    p.write_bytes(png_bytes())
-    assert icons.png_for(p) == p
-
-
 # --- coverage against the real `diagrams` layout -----------------------------------------------
 
 
