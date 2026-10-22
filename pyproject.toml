@@ -38,4 +38,4 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["tests"]
 markers = ["visio: needs Microsoft Visio installed (run with -m visio)"]
-addopts = "-m 'not visio'"
+addopts = "-m 'not visio' --import-mode=importlib"

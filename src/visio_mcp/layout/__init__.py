@@ -6,7 +6,7 @@ Engines by preset:
                         when the graph is a forest without groups
 - swimlane-*            lanes as full-length bands sharing flow ranks
 - radial / circular     rings around a hub / one circle (groups as compact blocks)
-- grid / compact        tidy grid, groups as blocks
+- grid                  tidy grid, groups as blocks
 - none                  given x/y, the rest in free spots
 """
 

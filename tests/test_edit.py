@@ -23,8 +23,8 @@ from visio_mcp.spec import (
 def fake_catalog(monkeypatch):
     def resolve(kind, has_master):
         if kind == "mystery":
-            return Resolved(Shape("BASIC_U.VSSX", "Rectangle"), None, "unknown kind 'mystery'")
-        return Resolved(Shape("BASFLO_U.VSSX", "Process"), None, None)
+            return Resolved(Shape("BASIC_U.VSSX", "Rectangle"), "unknown kind 'mystery'")
+        return Resolved(Shape("BASFLO_U.VSSX", "Process"), None)
 
     monkeypatch.setattr(catalog, "resolve", resolve)
     monkeypatch.setattr(catalog, "lookup", lambda kind: None)

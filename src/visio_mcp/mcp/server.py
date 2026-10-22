@@ -50,7 +50,7 @@ def drawer() -> Drawer:
         live = _flag("VISIO_MCP_LIVE", True) and not _flag("VISIO_MCP_HEADLESS", False)
         _drawer = Drawer(
             target=os.environ.get("VISIO_MCP_TARGET", "auto"),  # type: ignore[arg-type]
-            live=live or _flag("VISIO_MCP_VISIBLE", False),
+            live=live,
             attach=_flag("VISIO_MCP_ATTACH", False),
             live_delay=float(os.environ.get("VISIO_MCP_LIVE_DELAY", "0.05")),
         )

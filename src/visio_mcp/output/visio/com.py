@@ -60,19 +60,6 @@ BACKGROUND = "__background"
 TEXT_MARGIN = "2 pt"
 LABEL_BELOW_HEIGHT = 0.45  # inches, text block under an icon
 
-# layout preset -> (PlaceStyle, RouteStyle)
-#   PlaceStyle: 1 top-to-bottom, 2 left-to-right, 3 radial, 6 circular, 7 compact tree
-#   RouteStyle: 2 straight, 3 tree NS, 4 tree WE, 6 clean right-angle (found by trying; 1 gives a merged bus)
-LAYOUTS = {
-    "flowchart-tb": (1, 6),
-    "flowchart-lr": (2, 6),
-    "tree-tb": (1, 3),
-    "tree-lr": (2, 4),
-    "radial": (3, 2),
-    "circular": (6, 2),
-    "compact": (7, 6),
-}
-SPACING = 0.9  # inches between shapes, so boxes never touch after layout
 
 
 def _message(exc: Exception) -> str:
@@ -247,7 +234,6 @@ class VisioCom:
             pass
         self._doc, self._stencils, self._opened_stencils = None, {}, []
 
-    quit = close
 
     # documents
     @_guard
@@ -615,26 +601,6 @@ class VisioCom:
             self._background(_rgb(background), bg)
         if self._visible:
             self._fit_window()
-
-    @_guard
-    def layout(self, preset: str) -> None:
-        page = self._page()
-        if preset != "none":
-            if preset not in LAYOUTS:
-                raise ValueError(f"unknown layout preset {preset!r}")
-            place, route = LAYOUTS[preset]
-            sheet = page.PageSheet
-            for cell, value in (
-                ("PlaceStyle", place),
-                ("RouteStyle", route),
-                ("AvenueSizeX", SPACING),
-                ("AvenueSizeY", SPACING),
-                ("BlockSizeX", SPACING / 2),
-                ("BlockSizeY", SPACING / 2),
-            ):
-                sheet.CellsU(cell).ResultIU = value
-            page.Layout()
-        self.fit_page(0.5)
 
     @_guard
     def fit_page(self, margin: float = 0.5) -> None:

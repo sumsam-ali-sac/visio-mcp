@@ -1,4 +1,3 @@
-import re
 
 from visio_mcp import catalog, style
 
@@ -37,7 +36,6 @@ def test_every_kind_is_well_formed():
         assert k.name == name
         assert k.description.strip()
         assert len(k.candidates) <= 3
-        assert k.fill is None or re.fullmatch(r"#[0-9A-Fa-f]{6}", k.fill)
         assert k.category in style.CATEGORIES, name
         assert k.geometry in style.GEOMETRY_MIN, name
         if not k.provider:
@@ -61,7 +59,7 @@ def test_generic_kinds_resolve_to_clean_geometry():
 def test_icon_flag_for_icon_masters():
     r = catalog.resolve("firewall", _all)
     assert r.shape.stencil not in catalog._FILLABLE
-    assert r.fill is None and r.icon
+    assert r.icon
     assert not catalog.resolve("process", _all).icon
 
 
@@ -96,7 +94,6 @@ def test_first_available_candidate_wins():
     k = catalog.kinds()["database"]
     r = catalog.resolve("database", _all)
     assert r.shape == k.candidates[0]
-    assert r.fill == k.fill
     assert r.warning is None and r.kind is k
 
 
@@ -140,7 +137,7 @@ def test_cloud_kind_nothing_available_warns():
 def test_unknown_kind_warns_with_hint():
     r = catalog.resolve("flux-capacitor", _all)
     assert r.shape == catalog.FALLBACK
-    assert r.fill is None and r.kind is None
+    assert r.kind is None
     assert r.warning and "flux-capacitor" in r.warning and "unknown" in r.warning
     r = catalog.resolve("databse", _all)
     assert r.kind is None and "did you mean" in r.warning and "database" in r.warning

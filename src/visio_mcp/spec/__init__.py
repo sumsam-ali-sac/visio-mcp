@@ -17,7 +17,6 @@ Layout = Literal[
     "radial",  # hub and spokes
     "circular",  # ring
     "grid",  # tidy grid, no flow direction (inventories, catalogs)
-    "compact",  # alias of grid, kept for older specs
     "none",  # keep given x/y, no auto-layout
 ]
 

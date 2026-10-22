@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 from visio_mcp.output.visio.backend import ShapeInfo, TextRun
@@ -23,7 +22,6 @@ class FakeVisio:
         self.fills: dict[str, str] = {}
         self.edges: dict[str, dict] = {}
         self.containers: dict[str, list[str]] = {}
-        self.layouts: list[str] = []
         self.files: list[str] = []
         self.runs: dict[str, list[TextRun]] = {}  # rich text per shape
         self.styles: dict[str, dict] = {}  # name -> dict(style, keep_fill, label_below)
@@ -168,15 +166,6 @@ class FakeVisio:
             self._add(ShapeInfo(BACKGROUND, "", None, width / 2, height / 2, width, height))
             self.boxes[BACKGROUND] = ShapeStyle(fill=background, line=None)
             self.send_to_back(BACKGROUND)
-
-    def layout(self, preset: str) -> None:
-        self.layouts.append(preset)
-        if preset == "none":
-            return
-        boxes = [s for s in self.items.values() if not (s.is_connector or s.is_container)]
-        cols = max(1, math.ceil(math.sqrt(len(boxes))))
-        for i, s in enumerate(boxes):
-            s.x, s.y = 1 + (i % cols) * 2.0, 1 + (i // cols) * 1.5
 
     def fit_page(self, margin: float = 0.5) -> None:
         """Shift the drawing to (margin, margin) and size the page around it; background follows."""

@@ -18,7 +18,7 @@ from visio_mcp.style import GroupStyle, NodeSize, get_theme
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = sorted((ROOT / "examples").glob("*.json"))
 PRESETS = ["flowchart-tb", "flowchart-lr", "tree-tb", "tree-lr", "swimlane-lr", "swimlane-tb",
-           "radial", "circular", "grid", "compact", "none"]
+           "radial", "circular", "grid", "none"]
 LAYERED = {"flowchart-tb", "flowchart-lr", "tree-tb", "tree-lr", "swimlane-lr", "swimlane-tb"}
 EPS = 1e-3
 
@@ -162,7 +162,7 @@ def test_routes_start_and_end_on_borders(graph: str, preset: str):
         assert len(pts) >= 2
         assert _on_border(pts[0], r.nodes[e.source]), (e.source, pts)
         assert _on_border(pts[-1], r.nodes[e.target]), (e.target, pts)
-        if preset in LAYERED or preset in ("grid", "compact", "none") or e.source == e.target:
+        if preset in LAYERED or preset in ("grid", "none") or e.source == e.target:
             for (x1, y1), (x2, y2) in itertools.pairwise(pts):
                 assert abs(x1 - x2) < EPS or abs(y1 - y2) < EPS, f"diagonal segment in {e.source}->{e.target}"
 

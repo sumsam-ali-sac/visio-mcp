@@ -18,7 +18,6 @@ class Kind:
     name: str
     description: str
     candidates: tuple[Shape, ...]  # tried in order; first available wins
-    fill: str | None = None  # default '#RRGGBB' (legacy; themes style by category)
     category: str = "generic"  # style.CATEGORIES: picks the theme style
     geometry: str = "rect"  # style.GEOMETRY_MIN key: how non-Visio renderers draw it
     provider: str | None = None  # 'azure' | 'aws' | 'gcp' for cloud service kinds
@@ -29,26 +28,12 @@ class Kind:
 @dataclass(frozen=True)
 class Resolved:
     shape: Shape
-    fill: str | None
     warning: str | None  # set when the kind is unknown or we fell back
     kind: Kind | None = None  # the resolved kind (None when unknown)
     icon: bool = False  # the master is an icon: keep its colors, label sits below it
 
 
 FALLBACK = Shape("BASIC_U.VSSX", "Rectangle")
-
-# Light fills per category (legacy; themes restyle fillable masters) so black text stays readable.
-_FLOW = "#DCEBFF"
-_SOFT = "#DDF3E4"
-_NET = "#FFF1D6"
-_ORG = "#EADCF8"
-_ERD = "#E3E8EE"
-_NOTE = "#FFF9C4"
-_FILL_BY_CAT = {
-    "terminal": _FLOW, "flow": _FLOW, "decision": _FLOW, "data": _SOFT, "compute": _SOFT,
-    "integration": _SOFT, "client": _SOFT, "person": _SOFT, "external": _SOFT, "network": _NET,
-    "security": _NET, "org": _ORG, "entity": _ERD, "note": _NOTE, "generic": None,
-}
 
 _BASFLO = "BASFLO_U.VSSX"
 _BASIC = "BASIC_U.VSSX"
@@ -77,7 +62,7 @@ _DIAMOND = (_BASIC, "Diamond")
 
 def _g(name: str, description: str, category: str, geometry: str, glyph: str, *shapes: tuple[str, str]) -> Kind:
     """A generic kind."""
-    return Kind(name, description, tuple(Shape(s, m) for s, m in shapes), _FILL_BY_CAT[category], category, geometry,
+    return Kind(name, description, tuple(Shape(s, m) for s, m in shapes), category, geometry,
                 None, None, glyph)
 
 
@@ -188,7 +173,7 @@ _GCP = "gcp"
 
 def _c(provider: str, slug: str, description: str, category: str, glyph: str, base: str,
        *shapes: tuple[str, str]) -> Kind:
-    return Kind(f"{provider}-{slug}", description, tuple(Shape(s, m) for s, m in shapes), _FILL_BY_CAT[category], category, "icon",
+    return Kind(f"{provider}-{slug}", description, tuple(Shape(s, m) for s, m in shapes), category, "icon",
                 provider, base, glyph)
 
 
@@ -460,9 +445,9 @@ def resolve(kind: str, has_master: Callable[[str, str], bool]) -> Resolved:
     if k is None:
         hint = suggest(kind)
         tip = f"; did you mean {', '.join(repr(h) for h in hint)}?" if hint else ""
-        return Resolved(FALLBACK, None, f"unknown kind '{kind}', drew a rectangle{tip} (see list_kinds)")
+        return Resolved(FALLBACK, f"unknown kind '{kind}', drew a rectangle{tip} (see list_kinds)")
     picked = _pick(k, has_master)
     if picked:
         shape, icon = picked
-        return Resolved(shape, None if icon else k.fill, None, k, icon)
-    return Resolved(FALLBACK, k.fill, f"no stencil master available for kind '{kind}', drew a rectangle", k)
+        return Resolved(shape, None, k, icon)
+    return Resolved(FALLBACK, f"no stencil master available for kind '{kind}', drew a rectangle", k)

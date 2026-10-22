@@ -155,36 +155,6 @@ def test_move_and_delete_cascades(v):
         v.delete("b")
 
 
-@pytest.mark.parametrize("preset", ["flowchart-tb", "tree-tb"])
-def test_layout_has_no_overlaps(v, tmp_path, preset):
-    edges = [("root", "l"), ("root", "r"), ("l", "ll"), ("l", "lr"), ("r", "rl"), ("r", "rr")]
-    ids = ["root", "l", "r", "ll", "lr", "rl", "rr"]
-    for n in ids:  # start deliberately stacked
-        v.drop_shape(n, "BASFLO_U.VSSX", "Process", 2.0, 2.0)
-        v.set_text(n, n)
-    for a, b in edges:
-        v.connect(f"{a}->{b}", a, b)
-    v.layout(preset)
-    assert overlaps(v) == []
-    s = by_name(v)
-    assert s["root"].y > s["ll"].y  # root on top
-    png = v.export(str(tmp_path / f"{preset}.png"))
-    assert (tmp_path / f"{preset}.png").stat().st_size > 1000 and png.endswith(".png")
-
-
-@pytest.mark.parametrize("preset", ["flowchart-lr", "tree-lr", "radial", "circular", "compact", "none"])
-def test_other_layout_presets_run(v, preset):
-    for i in range(5):
-        v.drop_shape(f"n{i}", "BASFLO_U.VSSX", "Process", 2.0, 2.0)
-    for i in range(1, 5):
-        v.connect(f"n0->n{i}", "n0", f"n{i}")
-    v.layout(preset)
-    if preset != "none":
-        assert overlaps(v) == []
-    with pytest.raises(ValueError):
-        v.layout("bogus")
-
-
 def test_save_and_export(v, tmp_path):
     v.drop_shape("a", "BASFLO_U.VSSX", "Process", 2.0, 3.0)
     v.set_text("a", "Hi")
@@ -350,19 +320,6 @@ def test_page_background_covers_page_after_fit(v):
     v.set_page(pw, ph, background=None)
     assert BACKGROUND not in by_name(v)
     v.present()  # no-op headless
-
-
-def test_layout_keeps_background(v):
-    v.set_page(8.0, 6.0, background="#FFFFFF")
-    for i in range(3):
-        v.drop_shape(f"n{i}", "BASFLO_U.VSSX", "Process", 2.0, 2.0)
-    v.connect("n0->n1", "n0", "n1")
-    v.connect("n0->n2", "n0", "n2")
-    v.layout("flowchart-tb")
-    assert overlaps(v) == []
-    sheet = v._page().PageSheet
-    bg = by_name(v)[BACKGROUND]
-    assert round(bg.width, 3) == round(sheet.CellsU("PageWidth").ResultIU, 3)
 
 
 # --- visible, live and attach -----------------------------------------------------------------

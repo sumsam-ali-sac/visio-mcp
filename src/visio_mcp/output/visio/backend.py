@@ -158,10 +158,6 @@ class VisioBackend(Protocol):
         """Page size in inches; background fills the whole page (None = white/none)."""
         ...
 
-    def layout(self, preset: str) -> None:
-        """Run Visio's own auto-layout with a spec Layout preset ('none' = no-op), then fit page."""
-        ...
-
     def fit_page(self, margin: float = 0.5) -> None:
         """Resize the page to its contents plus margin, keeping the background covering it."""
         ...
