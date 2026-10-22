@@ -397,10 +397,6 @@ def _text_xml(runs: list[TextRun], align: str = "center") -> tuple[str, str]:
     return char + para, "<Text>" + "".join(body) + "</Text>"
 
 
-def _text_lines(runs: list[TextRun]) -> int:
-    return max(1, "".join(r.text for r in runs).count("\n") + 1)
-
-
 def _text_height(runs: list[TextRun]) -> float:
     """Rough height of runs in inches (each paragraph sized by its largest run)."""
     h, line = 0.0, 0.0
@@ -624,7 +620,6 @@ def _draw_group(page: _Page, g: PlannedGroup) -> None:
         "msvStructureType": ("Container", "STR", '"Container"'),
         "msvSDContainerMargin": (_n(min(st.padding, 0.25)), "IN", None),
         "msvSDContainerResize": ("0", None, None),
-        "msvSDContainerStyle": ("0", None, None),
     }))
     page.add(s)
 
