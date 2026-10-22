@@ -1,0 +1,17 @@
+{
+  "title": "Internet Banking System",
+  "subtitle": "C4 · System context",
+  "type": "c4-context",
+  "nodes": [
+    {"id": "customer", "label": "Personal Customer", "kind": "person", "description": "A customer of the bank with accounts"},
+    {"id": "ibs", "label": "Internet Banking", "kind": "system", "description": "View accounts and make payments", "emphasis": true},
+    {"id": "mainframe", "label": "Mainframe Banking", "kind": "external-system", "description": "Core accounts and transactions"},
+    {"id": "email", "label": "E-mail System", "kind": "external-system", "description": "Microsoft Exchange"}
+  ],
+  "edges": [
+    {"source": "customer", "target": "ibs", "label": "views accounts, pays"},
+    {"source": "ibs", "target": "mainframe", "label": "gets account data"},
+    {"source": "ibs", "target": "email", "label": "sends e-mail"},
+    {"source": "email", "target": "customer", "label": "delivers e-mail"}
+  ]
+}

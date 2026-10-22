@@ -143,8 +143,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
         else:
             icon = bool(kind and kind.geometry in ("icon", "person"))
         category = kind.category if kind else "generic"
-        geometry = "icon" if icon and (kind is None or kind.geometry != "person") else (
-            kind.geometry if kind else "rounded")
+        geometry = _geometry(kind, icon, has_master is not None)
         resolved[n.id] = (kind, master, icon)
         sizes[n.id] = node_size(geometry, n.label, n.technology, n.description, theme, category)
 
@@ -191,8 +190,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
             id=n.id,
             kind=kind.name if kind else "box",
             category=category,
-            geometry=("icon" if icon and (kind is None or kind.geometry != "person")
-                      else (kind.geometry if kind else "rounded")),
+            geometry=_geometry(kind, icon, has_master is not None),
             label=n.label,
             runs=_node_runs(n.label, n.technology, n.description, style.text, theme),
             rect=rect,
@@ -264,6 +262,21 @@ def unique_edge_name(base: str, taken: set[str]) -> str:
 
 
 # --- helpers ------------------------------------------------------------------------------
+
+
+def _geometry(kind: catalog.Kind | None, icon: bool, visio: bool) -> str:
+    """How the node is drawn. In Visio a non-icon master stands in for icon kinds, so use the
+    geometry of the base kind it fell back to; without Visio icon kinds draw as glyph tiles."""
+    if kind is None:
+        return "rounded"
+    if icon:
+        return "person" if kind.geometry == "person" else "icon"
+    if visio and kind.geometry in ("icon", "person"):
+        base = kind
+        while base.geometry in ("icon", "person") and base.base and (nxt := catalog.lookup(base.base)):
+            base = nxt
+        return base.geometry if base.geometry not in ("icon", "person") else "rounded"
+    return kind.geometry
 
 
 def _depth(g: Group, groups: list[Group]) -> int:

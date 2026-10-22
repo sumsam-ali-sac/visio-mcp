@@ -1,0 +1,34 @@
+{
+  "title": "Order Intake",
+  "subtitle": "AWS serverless · event-driven",
+  "type": "cloud",
+  "groups": [
+    {"id": "aws", "label": "AWS Cloud", "kind": "cloud"},
+    {"id": "region", "label": "us-east-1", "kind": "region", "parent": "aws"},
+    {"id": "vpc", "label": "VPC", "kind": "network", "parent": "region"},
+    {"id": "private", "label": "Private Subnet", "kind": "subnet", "parent": "vpc"}
+  ],
+  "nodes": [
+    {"id": "client", "label": "Mobile App", "kind": "mobile"},
+    {"id": "cf", "label": "CloudFront", "kind": "aws-cloudfront", "group": "aws"},
+    {"id": "apigw", "label": "API Gateway", "kind": "aws-api-gateway", "group": "region"},
+    {"id": "auth", "label": "Cognito", "kind": "aws-cognito", "group": "region"},
+    {"id": "create", "label": "Create Order", "kind": "aws-lambda", "group": "region", "emphasis": true},
+    {"id": "bus", "label": "Order Events", "kind": "aws-eventbridge", "group": "region"},
+    {"id": "queue", "label": "Fulfilment Queue", "kind": "aws-sqs", "group": "region"},
+    {"id": "fulfil", "label": "Fulfil Order", "kind": "aws-lambda", "group": "private"},
+    {"id": "table", "label": "Orders Table", "kind": "aws-dynamodb", "group": "region"},
+    {"id": "db", "label": "Inventory DB", "kind": "aws-aurora", "technology": "PostgreSQL", "group": "private"}
+  ],
+  "edges": [
+    {"source": "client", "target": "cf", "label": "HTTPS"},
+    {"source": "cf", "target": "apigw"},
+    {"source": "apigw", "target": "auth", "label": "authorize", "style": "dotted"},
+    {"source": "apigw", "target": "create", "label": "invoke"},
+    {"source": "create", "target": "table", "label": "put item"},
+    {"source": "create", "target": "bus", "label": "OrderCreated", "style": "dashed"},
+    {"source": "bus", "target": "queue", "label": "rule", "style": "dashed"},
+    {"source": "queue", "target": "fulfil", "label": "poll", "style": "dashed"},
+    {"source": "fulfil", "target": "db", "label": "SQL"}
+  ]
+}

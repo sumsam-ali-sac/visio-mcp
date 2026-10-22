@@ -1,0 +1,81 @@
+# C4 container
+
+**Use when:** you need the deployable apps, services and data stores inside one system, with their technologies and how they communicate.
+
+## Purpose
+Level 2 of the C4 model (Simon Brown). A "container" is a separately deployable or
+runnable thing: a web app, an API, a worker, a database, a queue. It answers "what is
+the system made of and how do the parts talk?" for architects and developers.
+
+## Spec settings
+- `"type": "c4-container"`, `"layout": "flowchart-lr"`.
+- Theme `auto` -> `c4`.
+- One group of kind `system` is the boundary of the system in scope.
+
+## Node kinds
+| Kind | Use for |
+|---|---|
+| `person` | Users, outside the system boundary. |
+| `webapp`, `client`, `mobile` | Front-end containers (SPA, server-rendered web app, mobile app). |
+| `api`, `service`, `function`, `worker` | Back-end containers (or the generic `container`). |
+| `queue` | Message brokers/topics owned by the system. |
+| `database`, `cache`, `storage` | Data stores owned by the system. |
+| `external-system` | Other systems, outside the boundary. |
+
+Every container gets `technology` (`Java / Spring Boot`, `PostgreSQL 16`) and a
+one-line `description` of its responsibility. That is what distinguishes C4 from a
+sketch.
+
+## Groups
+- Exactly one `system` group = the system boundary; all containers inside it.
+- People and external systems outside it (`[external-placement]`).
+- Do not add tiers inside the boundary unless the system is large; keep it flat.
+
+## Edges
+- Label = intent + protocol: `reads/writes (SQL)`, `calls (JSON/HTTPS)`,
+  `publishes order events (AMQP)`. Keep to 4 words where possible: `JSON/HTTPS`,
+  `SQL/TCP`.
+- `dashed` for async messaging.
+- Arrow points from the initiator.
+
+## Checklist
+- [ ] One system boundary holding all containers
+- [ ] Every container has technology and a description
+- [ ] People and external systems outside the boundary
+- [ ] Every edge labeled with protocol/intent
+- [ ] Containers, not components: no classes, modules or functions inside an API
+
+## Common mistakes
+- Drawing components (controllers, repositories) - that is C4 level 3.
+- Shared databases owned by another system drawn inside your boundary.
+- Missing technology on containers.
+- A container per Kubernetes pod replica - draw the container once.
+
+## Example
+```json
+{
+  "title": "Internet Banking - Containers",
+  "subtitle": "C4 level 2 - Oct 2026",
+  "type": "c4-container",
+  "layout": "flowchart-lr",
+  "groups": [
+    {"id": "banking", "label": "Internet Banking", "kind": "system"}
+  ],
+  "nodes": [
+    {"id": "customer", "label": "Personal Customer", "kind": "person"},
+    {"id": "spa", "label": "Single-Page App", "kind": "webapp", "group": "banking", "technology": "TypeScript / React", "description": "Banking features in the browser."},
+    {"id": "mobile", "label": "Mobile App", "kind": "mobile", "group": "banking", "technology": "Kotlin / Swift", "description": "Banking features on phones."},
+    {"id": "api", "label": "API Application", "kind": "api", "group": "banking", "technology": "Java / Spring Boot", "description": "Banking functionality over JSON/HTTPS."},
+    {"id": "db", "label": "Banking Database", "kind": "database", "group": "banking", "technology": "PostgreSQL", "description": "Users, sessions and audit log."},
+    {"id": "mainframe", "label": "Core Banking", "kind": "external-system", "description": "Accounts and transactions."}
+  ],
+  "edges": [
+    {"source": "customer", "target": "spa", "label": "HTTPS"},
+    {"source": "customer", "target": "mobile", "label": "uses"},
+    {"source": "spa", "target": "api", "label": "JSON/HTTPS"},
+    {"source": "mobile", "target": "api", "label": "JSON/HTTPS"},
+    {"source": "api", "target": "db", "label": "SQL/TCP"},
+    {"source": "api", "target": "mainframe", "label": "XML/HTTPS"}
+  ]
+}
+```

@@ -1,0 +1,24 @@
+{
+  "title": "Order Lifecycle",
+  "subtitle": "State machine",
+  "type": "state",
+  "nodes": [
+    {"id": "init", "label": "Start", "kind": "initial"},
+    {"id": "pending", "label": "Pending", "kind": "state"},
+    {"id": "paid", "label": "Paid", "kind": "state"},
+    {"id": "shipped", "label": "Shipped", "kind": "state"},
+    {"id": "delivered", "label": "Delivered", "kind": "state"},
+    {"id": "cancelled", "label": "Cancelled", "kind": "state"},
+    {"id": "fin", "label": "End", "kind": "final"}
+  ],
+  "edges": [
+    {"source": "init", "target": "pending", "label": "place order"},
+    {"source": "pending", "target": "paid", "label": "payment captured"},
+    {"source": "pending", "target": "cancelled", "label": "timeout / cancel"},
+    {"source": "paid", "target": "shipped", "label": "dispatch"},
+    {"source": "paid", "target": "cancelled", "label": "refund"},
+    {"source": "shipped", "target": "delivered", "label": "confirm delivery"},
+    {"source": "delivered", "target": "fin"},
+    {"source": "cancelled", "target": "fin"}
+  ]
+}

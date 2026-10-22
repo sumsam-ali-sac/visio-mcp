@@ -1,6 +1,6 @@
 [project]
 name = "visio-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server that drives Microsoft Visio to generate any diagram from a semantic spec"
 authors = [
     { name = "Sumsam Ali - Imperium Dynamics", email = "sumsam.ali@imperiumdynamics.com" }
@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 visio-mcp = "visio_mcp.server:main"
+visio-ai = "visio_mcp.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

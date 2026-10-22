@@ -1,0 +1,29 @@
+{
+  "title": "Refund Request",
+  "subtitle": "Cross-functional process",
+  "type": "swimlane",
+  "groups": [
+    {"id": "customer", "label": "Customer", "kind": "lane"},
+    {"id": "support", "label": "Support", "kind": "lane"},
+    {"id": "finance", "label": "Finance", "kind": "lane"}
+  ],
+  "nodes": [
+    {"id": "start", "label": "Request Refund", "kind": "start", "group": "customer"},
+    {"id": "review", "label": "Review Request", "kind": "process", "group": "support"},
+    {"id": "valid", "label": "Within Policy?", "kind": "decision", "group": "support"},
+    {"id": "reject", "label": "Send Rejection", "kind": "process", "group": "support"},
+    {"id": "approve", "label": "Approve Refund", "kind": "process", "group": "finance"},
+    {"id": "pay", "label": "Issue Payment", "kind": "process", "group": "finance"},
+    {"id": "done", "label": "Refund Received", "kind": "end", "group": "customer"},
+    {"id": "closed", "label": "Request Closed", "kind": "end", "group": "customer"}
+  ],
+  "edges": [
+    {"source": "start", "target": "review"},
+    {"source": "review", "target": "valid"},
+    {"source": "valid", "target": "approve", "label": "yes"},
+    {"source": "valid", "target": "reject", "label": "no"},
+    {"source": "approve", "target": "pay"},
+    {"source": "pay", "target": "done"},
+    {"source": "reject", "target": "closed"}
+  ]
+}
