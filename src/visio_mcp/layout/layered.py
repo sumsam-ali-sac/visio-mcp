@@ -332,7 +332,7 @@ def assign_cross(lg: LayerGraph, members: set[int] | None = None, iterations: in
         if members is not None and (s.a not in members or s.b not in members):
             continue
         va, vb = lg.verts[s.a], lg.verts[s.b]
-        w = 8.0 if va.dummy and vb.dummy else 2.0 if va.dummy or vb.dummy else 1.0
+        w = 8.0 if va.dummy and vb.dummy else 1.0
         w *= lg.chains[s.chain].weight
         off = lg.port(s, True) - lg.port(s, False)
         up[s.b].append((s.a, w, off))
@@ -381,7 +381,7 @@ def mark_branches(lg: LayerGraph) -> None:
             continue
         main = max(outs, key=lambda c: 0 if c.open_bottom else reach(c.verts[-1]))
         for c in outs:
-            c.weight = 4.0 if c is main else 0.5
+            c.weight = 10.0 if c is main else 0.1
 
 
 def _place_rank(lg: LayerGraph, layer: list[int], nbrs: list, extra: list | None) -> None:
@@ -393,7 +393,7 @@ def _place_rank(lg: LayerGraph, layer: list[int], nbrs: list, extra: list | None
         items = nbrs[v] + (extra[v] if extra is not None else [])
         tw = sum(w for _, w, _ in items)
         if tw > 0:
-            desired.append(sum(w * (verts[o].u + off) for o, w, off in items) / tw)
+            desired.append(_weighted_median([(verts[o].u + off, w) for o, w, off in items]))
             weights.append(tw)
         else:
             desired.append(verts[v].u)
@@ -401,6 +401,20 @@ def _place_rank(lg: LayerGraph, layer: list[int], nbrs: list, extra: list | None
     seps = [separation(verts[layer[i]], verts[layer[i + 1]]) for i in range(len(layer) - 1)]
     for v, x in zip(layer, pav(desired, weights, seps)):
         verts[v].u = x
+
+
+def _weighted_median(vals: list[tuple[float, float]]) -> float:
+    """Value splitting the weight in half; the mean of the two middle values on an exact tie."""
+    vals.sort()
+    half = sum(w for _, w in vals) / 2
+    acc = 0.0
+    for i, (x, w) in enumerate(vals):
+        acc += w
+        if abs(acc - half) < 1e-9 and i + 1 < len(vals):
+            return (x + vals[i + 1][0]) / 2
+        if acc > half:
+            return x
+    return vals[-1][0]
 
 
 def pav(desired: list[float], weights: list[float], seps: list[float]) -> list[float]:

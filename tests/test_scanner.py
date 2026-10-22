@@ -640,9 +640,12 @@ def test_architecture_spec_multi_repo_links(workspace: Path):
     assert_valid(spec)
     labels = {n.label: n.id for n in spec.nodes}
     assert {"orders-api", "storefront"} <= set(labels)
-    assert any(e.source == labels["storefront"] and e.target == labels["orders-api"] and e.style == "dashed"
-               for e in spec.edges)
-    assert len([g for g in spec.groups if g.kind == "system"]) >= 2
+    # the frontend reads the API's URL from config: a synchronous HTTPS call
+    assert any(e.source == labels["storefront"] and e.target == labels["orders-api"] and e.label == "HTTPS"
+               and e.style == "solid" for e in spec.edges)
+    # repo frames are kept only when they hold more than one node
+    for g in (g for g in spec.groups if g.kind == "system"):
+        assert sum(1 for n in spec.nodes if n.group == g.id) >= 2
     assert spec.title == "ws architecture"
 
 

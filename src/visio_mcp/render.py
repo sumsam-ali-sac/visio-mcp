@@ -91,6 +91,17 @@ def find_overlaps(shapes: list[ShapeInfo]) -> list[tuple[str, str]]:
 def _draw_planned(backend: VisioBackend, n: PlannedNode) -> None:
     master = n.master or catalog.FALLBACK
     s = n.shape
+    if n.image is not None and master == catalog.FALLBACK:
+        # official cloud icon / custom icon file: imported as a picture, label below it
+        try:
+            backend.drop_image(n.id, str(n.image), s.x, s.y, s.w, s.h)
+        except (RuntimeError, OSError, ValueError):  # drop_image leaves nothing behind when it fails
+            backend.drop_shape(n.id, master.stencil, master.master, s.x, s.y, s.w, s.h)
+            backend.style_shape(n.id, n.style, keep_fill=False, label_below=True)
+        else:
+            backend.style_shape(n.id, n.style, keep_fill=True, label_below=True)
+        backend.set_rich_text(n.id, n.runs)
+        return
     backend.drop_shape(n.id, master.stencil, master.master, s.x, s.y, s.w, s.h)
     backend.style_shape(n.id, n.style, keep_fill=n.icon, label_below=n.icon)
     backend.set_rich_text(n.id, n.runs)

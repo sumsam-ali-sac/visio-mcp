@@ -11,6 +11,8 @@ Writes a Visio 2013+ OPC package ([MS-VSDX]) by hand with the standard library:
     visio/pages/pages.xml            one page, sized to the plan
     visio/pages/_rels/pages.xml.rels
     visio/pages/page1.xml            shapes + connects
+    visio/pages/_rels/page1.xml.rels icons (only when the plan has images)
+    visio/media/imageN.png           official cloud icons / custom icons, as Foreign shapes
 
 No masters: every shape carries its own Geometry sections, so the file opens the same
 everywhere. Nodes, groups and connectors are named like the COM backend names them
@@ -50,6 +52,7 @@ REL_PAGE = "http://schemas.microsoft.com/visio/2010/relationships/page"
 REL_WINDOWS = "http://schemas.microsoft.com/visio/2010/relationships/windows"
 REL_CORE = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
 REL_APP = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"
+REL_IMAGE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 
 CT_DOCUMENT = "application/vnd.ms-visio.drawing.main+xml"
 CT_PAGES = "application/vnd.ms-visio.pages+xml"
@@ -58,6 +61,7 @@ CT_WINDOWS = "application/vnd.ms-visio.windows+xml"
 CT_CORE = "application/vnd.openxmlformats-package.core-properties+xml"
 CT_APP = "application/vnd.openxmlformats-officedocument.extended-properties+xml"
 CT_RELS = "application/vnd.openxmlformats-package.relationships+xml"
+CT_PNG = "image/png"
 
 # Style sheet ids in document.xml
 STYLE_NONE = 0  # 'No Style': root of every inheritance chain, defines every cell
@@ -423,8 +427,9 @@ class _Shape:
     cells: list[str] = field(default_factory=list)
     sections: list[str] = field(default_factory=list)
     text: str = ""
-    type: Literal["Shape", "Group"] = "Shape"
+    type: Literal["Shape", "Group", "Foreign"] = "Shape"
     children: list["_Shape"] = field(default_factory=list)
+    foreign: str = ""  # <ForeignData> of a picture shape
 
     def xml(self) -> str:
         a = _attrs(ID=self.id, NameU=self.name, Name=self.name, IsCustomNameU=1, IsCustomName=1,
@@ -432,7 +437,7 @@ class _Shape:
         kids = ""
         if self.children:
             kids = "<Shapes>" + "".join(c.xml() for c in self.children) + "</Shapes>"
-        return f"<Shape{a}>{''.join(self.cells)}{''.join(self.sections)}{self.text}{kids}</Shape>"
+        return f"<Shape{a}>{''.join(self.cells)}{''.join(self.sections)}{self.text}{self.foreign}{kids}</Shape>"
 
 
 def _xform(x: float, y: float, w: float, h: float) -> list[str]:
@@ -508,6 +513,8 @@ class _Page:
         self.ids: dict[str, int] = {}  # shape name -> id (top-level, addressable)
         self._next = 1
         self.fonts: list[str] = []
+        self.pngs: dict[Path, Path | None] = {}  # node image -> bitmap to embed (None: draw the glyph tile)
+        self.media: dict[Path, tuple[str, str]] = {}  # bitmap -> (rel id, part name 'imageN.png')
 
     def new_id(self) -> int:
         i = self._next
@@ -558,6 +565,25 @@ class _Page:
         chars, txt = _text_xml(runs, align)
         s.sections.insert(0, chars)
         s.text = txt
+        return s
+
+    def picture(self, name: str, r: Rect, png: Path) -> _Shape:
+        """A Foreign (picture) shape showing png, fitted into r keeping its aspect ratio."""
+        if png not in self.media:
+            n = len(self.media) + 1
+            self.media[png] = (f"rId{n}", f"image{n}.png")
+        rid = self.media[png][0]
+        iw, ih = _png_size(png)
+        k = min(r.w / iw, r.h / ih) if iw and ih else 1.0
+        w, h = (iw * k, ih * k) if iw and ih else (r.w, r.h)
+        s = _Shape(self.new_id(), name, type="Foreign")
+        s.cells += _xform(r.x, r.y, w, h)
+        s.cells += [_cell("LinePattern", 0), _cell("FillPattern", 0), _cell("ShdwPattern", 0),
+                    _cell("ObjType", OBJ_IGNORE),
+                    _len("ImgOffsetX", 0.0, "ImgWidth*0"), _len("ImgOffsetY", 0.0, "ImgHeight*0"),
+                    _len("ImgWidth", w, "Width*1"), _len("ImgHeight", h, "Height*1"),
+                    _cell("LockAspect", 1)]
+        s.foreign = f'<ForeignData ForeignType="Bitmap" CompressionType="PNG"><Rel r:id="{rid}"/></ForeignData>'
         return s
 
     def line(self, name: str, pts: list[tuple[float, float]], color: str, weight_pt: float, pattern: str,
@@ -660,12 +686,28 @@ def _glyph(n: PlannedNode) -> str:
     return "".join(w[0] for w in words[:2]).upper() or "?"
 
 
+def _png_size(path: Path) -> tuple[int, int]:
+    """Pixel size from a PNG header ((0, 0) when unreadable)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(24)
+        if head[:8] == b"\x89PNG\r\n\x1a\n":
+            return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+    except OSError:
+        pass
+    return 0, 0
+
+
 def _draw_node(page: _Page, plan: DiagramPlan, n: PlannedNode) -> None:
     st, sh = n.style, n.shape
     geom = n.geometry
     below = geom in ("icon", "person") or n.icon
     runs = _readable_below(n.runs, plan) if below else n.runs
-    if geom == "icon":
+    png = page.pngs.get(n.image) if n.image is not None else None
+    if geom == "icon" and png is not None:
+        # an invisible frame (glue target, label below) grouping the picture
+        s = page.box(n.id, sh, replace(st, fill=None, line=None, shadow=False), "rect")
+    elif geom == "icon":
         tile = replace(st, fill=st.line or st.fill or "#64748B", line=None, line_weight=0)
         s = page.box(n.id, sh, tile, "icon")
     else:
@@ -689,10 +731,17 @@ def _draw_node(page: _Page, plan: DiagramPlan, n: PlannedNode) -> None:
                     _len("TxtLocPinX", tw / 2, "TxtWidth*0.5"), _len("TxtLocPinY", th / 2, "TxtHeight*0.5"),
                     _cell("TxtAngle", 0.0)]
     if geom == "icon":
-        # glyph rides along inside a group, so the tile, glyph and label move as one node
+        # glyph (or picture) rides along inside a group, so it and the label move as one node
         s.type = "Group"
         s.cells += [_cell("SelectMode", 0), _cell("DisplayMode", 2), _cell("IsTextEditTarget", 1),
                     _cell("IsSnapTarget", 1), _cell("DontMoveChildren", 0)]
+    if geom == "icon" and png is not None:
+        pic = page.picture(f"__icon_{n.id}", Rect(sh.w / 2, sh.h / 2, sh.w, sh.h), png)
+        pic.cells += [_cell("LockSelect", 1), _cell("LockTextEdit", 1)]
+        s.children.append(pic)
+        page.add(s)
+        return
+    if geom == "icon":
         glyph = _glyph(n)
         size = 16 if len(glyph) <= 1 else 13 if len(glyph) == 2 else 10
         size = min(size, sh.h * 72 * 0.38)
@@ -923,7 +972,7 @@ def _rels(rels: list[tuple[str, str, str]]) -> str:
     return f'{_XML}<Relationships xmlns="{NS_PKG_REL}">{body}</Relationships>'
 
 
-def _content_types() -> str:
+def _content_types(images: bool = False) -> str:
     overrides = [
         ("/visio/document.xml", CT_DOCUMENT),
         ("/visio/pages/pages.xml", CT_PAGES),
@@ -934,6 +983,7 @@ def _content_types() -> str:
     ]
     body = (f'<Default Extension="rels" ContentType="{CT_RELS}"/>'
             '<Default Extension="xml" ContentType="application/xml"/>'
+            + (f'<Default Extension="png" ContentType="{CT_PNG}"/>' if images else "")
             + "".join(f'<Override PartName="{p}" ContentType="{c}"/>' for p, c in overrides))
     return f'{_XML}<Types xmlns="{NS_CT}">{body}</Types>'
 
@@ -968,6 +1018,11 @@ def build_page(plan: DiagramPlan) -> _Page:
     nodes, title. Nodes are drawn before connectors are written so glue can name their ids;
     connectors are then moved below the nodes."""
     page = _Page()
+    wanted = [n.image for n in plan.nodes if n.image is not None and n.geometry == "icon"]
+    if wanted:
+        from visio_mcp import icons
+
+        page.pngs = icons.pngs_for(wanted)  # SVG icons rasterized once; None -> glyph tile
     _draw_background(page, plan)
     for g in sorted(plan.groups, key=lambda g: g.depth):
         _draw_group(page, g)
@@ -1013,9 +1068,16 @@ def write_vsdx(plan: DiagramPlan, path: str | Path) -> Path:
         "visio/pages/_rels/pages.xml.rels": _rels([("rId1", REL_PAGE, "page1.xml")]),
         "visio/pages/page1.xml": _page_xml(page),
     }
+    if page.media:
+        parts["[Content_Types].xml"] = _content_types(images=True)
+        parts["visio/pages/_rels/page1.xml.rels"] = _rels(
+            [(rid, REL_IMAGE, f"../media/{part}") for rid, part in page.media.values()])
+    media = {f"visio/media/{part}": png for png, (_, part) in page.media.items()}
     tmp = out.with_suffix(out.suffix + ".tmp")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
         for name, data in parts.items():
             z.writestr(name, data.encode("utf-8"))
+        for name, png in media.items():
+            z.write(png, name, compress_type=zipfile.ZIP_STORED)
     tmp.replace(out)
     return out

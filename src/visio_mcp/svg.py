@@ -10,6 +10,7 @@ CSS pixels (1 inch = 96 px) with y flipped, so a shape with a larger plan y is d
 
 from __future__ import annotations
 
+import base64
 import html as _html
 import math
 import os
@@ -379,7 +380,7 @@ def render_svg(plan: DiagramPlan) -> str:
 
     w, h = _n(c.W), _n(c.H)
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
         f'role="img" aria-labelledby="svg-title svg-desc" text-rendering="geometricPrecision" '
         f'data-theme="{esc(th.name)}">'
         f'<title id="svg-title">{esc(title)}</title><desc id="svg-desc">{esc(desc)}</desc>'
@@ -465,6 +466,10 @@ def _icon_node(c: _Ctx, n: PlannedNode, x0: float, y0: float, x1: float, y1: flo
             f'<path d="M{_n(px0 + s * 0.12)} {_n(py0 + s)}'
             f'C{_n(px0 + s * 0.12)} {_n(py0 + s * 0.62)} {_n(px0 + s * 0.3)} {_n(py0 + s * 0.55)} {_n(cx)} {_n(py0 + s * 0.55)}'
             f'C{_n(px0 + s * 0.7)} {_n(py0 + s * 0.55)} {_n(px0 + s * 0.88)} {_n(py0 + s * 0.62)} {_n(px0 + s * 0.88)} {_n(py0 + s)}Z"/></g>')
+    elif n.image is not None and (uri := _image_uri(n.image)):
+        s = min(w, h)
+        out.append(f'<image x="{_n(cx - s / 2)}" y="{_n(y0)}" width="{_n(s)}" height="{_n(s)}" '
+                   f'preserveAspectRatio="xMidYMid meet" xlink:href="{uri}"/>')
     else:
         s = min(w, h)
         rx = s * 0.18
@@ -493,6 +498,25 @@ def _icon_node(c: _Ctx, n: PlannedNode, x0: float, y0: float, x1: float, y1: flo
     lines, _ = _fit_text(runs, (fx1 - fx0) - 4, max(avail_h, 14))
     out.append(_text_svg(lines, cx, y0 + min(w, h) + 6))
     return "".join(out)
+
+
+_URI_CACHE: dict[tuple[str, int, int], str] = {}
+
+
+def _image_uri(path: Path) -> str | None:
+    """An icon file as a base64 data URI (SVG or PNG); None when it can't be read."""
+    try:
+        p = Path(path)
+        st = p.stat()
+        key = (str(p), st.st_mtime_ns, st.st_size)
+        if key not in _URI_CACHE:
+            mime = {".svg": "image/svg+xml", ".png": "image/png"}.get(p.suffix.lower())
+            if mime is None:
+                return None
+            _URI_CACHE[key] = f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode("ascii")
+        return _URI_CACHE[key]
+    except OSError:
+        return None
 
 
 def _vector_glyph(kind: str, cx: float, cy: float, s: float) -> str | None:

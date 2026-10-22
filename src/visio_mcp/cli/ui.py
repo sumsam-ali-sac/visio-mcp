@@ -93,7 +93,8 @@ def fail(msg: str, hint: str = "") -> None:
 
 
 def info(msg: str) -> None:
-    console.print(Text.assemble(("  • ", "muted"), msg))
+    """A bullet line; msg may use rich markup like [bold]…[/]."""
+    console.print(Text.assemble(("  • ", "muted"), Text.from_markup(msg)))
 
 
 def hint(msg: str) -> None:

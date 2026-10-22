@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal
 
-from visio_mcp import catalog, lint
+from visio_mcp import catalog, icons, lint
 from visio_mcp.backend import TextRun
 from visio_mcp.catalog import Shape
 from visio_mcp.layout import Point, Rect, compute_layout
@@ -134,21 +134,45 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
 
     # resolve kinds and size nodes
     resolved: dict[str, tuple[catalog.Kind | None, Shape | None, bool]] = {}
+    images: dict[str, Path | None] = {}
+    geometries: dict[str, str] = {}
     sizes: dict[str, NodeSize] = {}
+    no_icon: dict[str, int] = {}  # provider -> cloud nodes drawn without an official icon
     for n in spec.nodes:
         kind = catalog.lookup(n.kind)
         master: Shape | None = None
+        image = icons.resolve_image(n.icon, n.kind)
+        if n.icon and image is None:
+            warnings.append(f"icon for {n.id!r} not found or not .svg/.png: {n.icon}")
         if has_master is not None:
             r = catalog.resolve(n.kind, has_master)
-            if r.warning:
-                warnings.append(r.warning)
             kind, master, icon = r.kind or kind, r.shape, r.icon
+            # a real icon master from the kind's own stencil candidates beats the downloaded icon,
+            # unless the spec names a custom icon; generic stand-ins (base kind, rectangle) lose
+            own_icon = icon and kind is not None and master in kind.candidates
+            if image is not None and (n.icon or not own_icon):
+                master, icon = None, True
+            else:
+                image = None
+                if r.warning:
+                    warnings.append(r.warning)
+            if image is None and not own_icon and kind is not None and kind.provider:
+                no_icon[kind.provider] = no_icon.get(kind.provider, 0) + 1
         else:
-            icon = bool(kind and kind.geometry in ("icon", "person"))
+            icon = image is not None or bool(kind and kind.geometry in ("icon", "person"))
+            if image is None and kind is not None and kind.provider:
+                no_icon[kind.provider] = no_icon.get(kind.provider, 0) + 1
         category = kind.category if kind else "generic"
-        geometry = _geometry(kind, icon, has_master is not None)
+        geometry = "icon" if image is not None else _geometry(kind, icon, has_master is not None)
         resolved[n.id] = (kind, master, icon)
+        images[n.id] = image
+        geometries[n.id] = geometry
         sizes[n.id] = node_size(geometry, n.label, n.technology, n.description, theme, category)
+    if no_icon:
+        count = sum(no_icon.values())
+        names = ", ".join(icons.PROVIDER_NAMES[p] for p in icons.PROVIDERS if p in no_icon)
+        warnings.append(f"{count} {names} service{'s' if count != 1 else ''} drawn without official icons; "
+                        "install official icons: visio-ai icons install (MCP: install_icons)")
 
     group_styles = {g.id: theme.group_style(g.kind, _depth(g, spec.groups)) for g in spec.groups}
     layout = compute_layout(spec, sizes, group_styles, spec.layout)
@@ -193,7 +217,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
             id=n.id,
             kind=kind.name if kind else "box",
             category=category,
-            geometry=_geometry(kind, icon, has_master is not None),
+            geometry=geometries[n.id],
             label=n.label,
             runs=_node_runs(n.label, n.technology, n.description, _label_text(style.text, theme, icon, kind),
                             theme, on_page=icon or bool(kind and kind.geometry == "person")),
@@ -205,6 +229,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
             glyph=kind.glyph if kind else "",
             provider=kind.provider if kind else None,
             emphasis=n.emphasis,
+            image=images[n.id],
         ))
 
     for g in _parents_first(spec.groups):

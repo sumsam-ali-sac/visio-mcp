@@ -37,6 +37,7 @@ class FakeVisio:
         self.z_order: list[str] = []  # back to front
         self.fits: list[float] = []  # fit_page margins
         self.presented = 0
+        self.images: dict[str, str] = {}  # name -> imported icon file
 
     # documents
     def new_document(self, title: str) -> None:
@@ -71,6 +72,12 @@ class FakeVisio:
         if not self.has_master(stencil, master):
             raise KeyError(f"no master {master!r} in {stencil!r}")
         self._add(ShapeInfo(name, "", master, x, y, width or 1.0, height or 0.75))
+
+    def drop_image(self, name: str, path: str, x: float, y: float, width: float, height: float) -> None:
+        if not Path(path).is_file():
+            raise OSError(f"no such image {path!r}")
+        self._add(ShapeInfo(name, "", "Image", x, y, width, height))
+        self.images[name] = path
 
     def set_text(self, name: str, text: str) -> None:
         self._get(name).text = text

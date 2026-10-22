@@ -37,6 +37,25 @@ def _humanize(name: str) -> str:
     return " ".join(s.split())
 
 
+_ROLE_SUFFIX = {"database": "DB", "cache": "Cache", "queue": "Queue", "storage": "Storage"}
+
+
+def _kind_suffix(kind: str) -> str:
+    base = kind.split("-", 1)[-1] if kind.startswith(("azure-", "aws-", "gcp-")) else kind
+    for words, suffix in ((("rds", "aurora", "sql", "dynamodb", "cosmos", "spanner", "firestore", "database",
+                            "bigtable", "alloydb"), "DB"),
+                          (("redis", "elasticache", "memorystore", "cache"), "Cache"),
+                          (("s3", "blob", "storage"), "Storage"),
+                          (("sqs", "sns", "service-bus", "pubsub", "queue", "topic", "event"), "Queue"),
+                          (("ecs", "eks", "fargate", "aks", "gke", "container", "app-service", "cloud-run",
+                            "service", "webapp", "ec2", "vm", "compute"), "Service"),
+                          (("lambda", "function"), "Function"),
+                          (("alb", "load", "gateway", "front-door", "cloudfront", "cdn"), "Gateway")):
+        if any(w in base for w in words):
+            return suffix
+    return ""
+
+
 def _primary_lang(r: RepoInfo) -> str:
     return next((l for l in r.languages if l not in _NON_PRIMARY), "")
 
@@ -59,11 +78,11 @@ class _Builder:
             i += 1
         return cand
 
-    def group(self, key: str, label: str, kind: str = "generic") -> str:
+    def group(self, key: str, label: str, kind: str = "generic", parent: str | None = None) -> str:
         if key not in self._gkeys:
             gid = self._uid("g_" + key)
             self._gkeys[key] = gid
-            self.groups[gid] = {"id": gid, "label": short(label, 28), "kind": kind}
+            self.groups[gid] = {"id": gid, "label": short(label, 28), "kind": kind, "parent": parent}
         return self._gkeys[key]
 
     def node(self, base: str, label: str, kind: str, group: str | None = None, technology: str = "",
@@ -84,13 +103,46 @@ class _Builder:
         self._ekeys.add((a, b))
         self.edges.append({"source": a, "target": b, "label": short(label, 18), "style": style})
 
+    def _unique_labels(self) -> None:
+        """Two nodes called 'Orders' become 'Orders Service' and 'Orders DB'."""
+        by_label: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for n in self.nodes.values():
+            by_label[n["label"].lower()].append(n)
+        for same in by_label.values():
+            if len(same) < 2:
+                continue
+            for n in same:
+                suffix = _ROLE_SUFFIX.get(self.cat.get(n["id"], ""), "") or _kind_suffix(n["kind"])
+                if suffix and not n["label"].lower().endswith(suffix.lower()):
+                    n["label"] = short(f"{n['label']} {suffix}", 26)
+            seen: dict[str, int] = defaultdict(int)
+            for n in same:
+                seen[n["label"].lower()] += 1
+                if seen[n["label"].lower()] > 1 and n["technology"]:
+                    n["label"] = short(f"{n['label']} ({n['technology']})", 26)
+
     def data_edge(self, src: str | None, dst: str, label: str = "") -> None:
         cat = self.cat.get(dst, "")
         self.edge(src, dst, label or _CAT_LABEL.get(cat, ""), "dashed" if cat == "queue" else "solid")
 
     def build(self, title: str, dtype: str, layout: str = "auto", subtitle: str = "Generated from repository scan") -> DiagramSpec:
+        # a repo "system" frame around a single node adds nothing: drop the frame
+        members: dict[str, list[str]] = defaultdict(list)
+        for n in self.nodes.values():
+            if n["group"]:
+                members[n["group"]].append(n["id"])
+        for gid, ids in members.items():
+            g = self.groups[gid]
+            if g["kind"] == "system" and len(ids) == 1 and not any(x.get("parent") == gid for x in self.groups.values()):
+                self.nodes[ids[0]]["group"] = g.get("parent")
         used = {n["group"] for n in self.nodes.values() if n["group"]}
+        for gid in list(used):  # keep the ancestors of every used group
+            parent = self.groups[gid].get("parent")
+            while parent and parent not in used:
+                used.add(parent)
+                parent = self.groups[parent].get("parent")
         groups = [g for g in self.groups.values() if g["id"] in used]
+        self._unique_labels()
         if not self.nodes:
             self.node("system", "Repository", _kind("service"))
         return DiagramSpec(
@@ -126,7 +178,34 @@ def _title(repos: list[RepoInfo], suffix: str) -> str:
     return f"{parent if same_parent and parent else f'{len(repos)} repositories'} {suffix}"
 
 
-def _add_cloud(b: _Builder, r: RepoInfo, api_id: str | None, fam: dict[str, str]) -> list[str]:
+_NETWORK_TYPES = ("aws_vpc", "azurerm_virtual_network", "google_compute_network", "aws_subnet",
+                  "Microsoft.Network/virtualNetworks", "AWS::EC2::VPC")
+_NETWORK_LABEL = {"aws": "VPC", "azure": "Virtual Network", "gcp": "VPC Network"}
+
+
+def _cloud_group(b: _Builder, r: RepoInfo, provider: str, role: str, nest: bool) -> str:
+    """The group a resource of this role sits in: cloud > region > network when nesting."""
+    top = b.group(f"cloud:{provider}", PROVIDER_LABEL.get(provider, provider.upper()), "cloud")
+    if not nest or role == "edge":
+        return top
+    region = b.group(f"region:{provider}", _region_label(r, provider), "region", parent=top)
+    has_net = any(str(x.get("type", "")).startswith(_NETWORK_TYPES) for x in r.resources)
+    if role == "aux" or not has_net:
+        return region
+    return b.group(f"net:{provider}", _NETWORK_LABEL.get(provider, "Network"), "network", parent=region)
+
+
+def _region_label(r: RepoInfo, provider: str) -> str:
+    import re as _re
+
+    for x in r.resources:
+        for v in (x.get("region"), x.get("location")):
+            if isinstance(v, str) and _re.fullmatch(r"[a-z]{2,}[-a-z]*-?\d?[a-z]?", v):
+                return v
+    return "Region"
+
+
+def _add_cloud(b: _Builder, r: RepoInfo, api_id: str | None, fam: dict[str, str], nest: bool = False) -> list[str]:
     """Nodes for IaC resources with provider-specific kinds; returns the ids it used."""
     res = [x for x in r.resources if lookup_resource(x)]
     keys = {resource_key(x) for x in res}
@@ -140,7 +219,7 @@ def _add_cloud(b: _Builder, r: RepoInfo, api_id: str | None, fam: dict[str, str]
     for key, items in list(groups.items())[:24]:
         entry = RES_TABLE[key]
         provider = items[0]["provider"] or (r.cloud[0] if r.cloud else "aws")
-        grp = b.group(f"cloud:{provider}", PROVIDER_LABEL.get(provider, provider.upper()), "cloud")
+        grp = _cloud_group(b, r, provider, "aux" if entry.base == "storage" else entry.role, nest)
         kind = _kind(entry.preferred, entry.base)
         cat = entry.base if entry.role == "data" and entry.base in ("queue", "cache", "storage", "database") else ""
         for idx, it in enumerate(items[: 1 if len(items) > 3 else 3]):
@@ -234,7 +313,7 @@ def _architecture(repos: list[RepoInfo], dtype: str) -> DiagramSpec:
             entries.append(entry)
 
         # 1. IaC resources (production truth) first, so dev compose / detected stores reuse them
-        _add_cloud(b, r, api, fam)
+        _add_cloud(b, r, api, fam, nest=dtype == "cloud")
 
         # 2. docker compose services
         svcmap: dict[str, str] = {}
@@ -266,7 +345,8 @@ def _architecture(repos: list[RepoInfo], dtype: str) -> DiagramSpec:
                         continue
                 kind = _kind("webapp") if _WEB_NAMES.search(sname) and not s.get("build", "").startswith("..") and (
                     "front" in sname or "web" in sname or sname == "ui") else _kind("service")
-                nid = b.node(sname, sname, kind, grp, s.get("image", "") or ("build " + s.get("build", "")).strip(), repo=r.name)
+                tech = s.get("image", "") or _primary_lang(r)
+                nid = b.node(sname, sname, kind, grp, tech, repo=r.name)
                 svcmap[sname] = nid
                 if s.get("ports") and not entry and not entries[-1:] == [nid]:
                     entries.append(nid)
@@ -320,8 +400,9 @@ def _architecture(repos: list[RepoInfo], dtype: str) -> DiagramSpec:
     # cross-repo links
     if multi:
         for a, c, why in cross_links(repos):
+            http = "config" in why or "env" in why or "url" in why
             b.edge(mains.get(a) or next(iter(sorted(b.members[a])), None), mains.get(c) or next(iter(sorted(b.members[c])), None),
-                   "calls", "dashed")
+                   "HTTPS" if http else "calls", "solid" if http else "dashed")
 
     out_type = "cloud" if dtype == "cloud" else "architecture"
     return b.build(_title(repos, "architecture" if dtype != "cloud" else "cloud architecture"), out_type)

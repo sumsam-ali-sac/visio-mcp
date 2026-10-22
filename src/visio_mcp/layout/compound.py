@@ -75,6 +75,11 @@ class Compound:
         self.loops = {e.source for e in spec.edges if e.source == e.target}
         self.decisions = {n.id for n in spec.nodes if n.kind in DECISION_KINDS}
         self.labels = {g.id: g.label or g.id for g in spec.groups}
+        self.hint: dict[str, float] = {}  # node -> u from a first pass, seeds the ordering
+        self.members: dict[str, list[str]] = defaultdict(list)
+        for n in spec.nodes:
+            for g in self.h.ancestors(n.id):
+                self.members[g].append(n.id)
         self._lift_edges()
 
     # --- edge bookkeeping ----------------------------------------------------------------
@@ -140,6 +145,8 @@ class Compound:
         internal = self.scope_edges.get(scope, [])
         dag = [(vid[b], vid[a]) if e in self.reversed else (vid[a], vid[b]) for e, a, b in internal]
         ext = self.external.get(scope, [])
+        if self.hint:
+            self._seed_order(lg, vid)
         compact = not internal
         if compact and len(items) > 4:
             per = math.ceil(math.sqrt(len(items)))
@@ -164,11 +171,18 @@ class Compound:
             lg.add_chain(e, x, y, upward=up, port_top=port(top, e), port_bottom=port(bottom, e),
                          label=self.spec.edges[e].label)
         for e, it, side, role in ext:
-            x, label = vid[it], self.spec.edges[e].label
+            x, edge = vid[it], self.spec.edges[e]
             if side == "end":
-                lg.add_chain(e, x, None, last_rank=last, upward=role == "tgt", port_top=port(it, e), label=label)
+                c = lg.add_chain(e, x, None, last_rank=last, upward=role == "tgt", port_top=port(it, e),
+                                 label=edge.label)
             else:
-                lg.add_chain(e, None, x, first_rank=0, upward=role == "src", port_bottom=port(it, e), label=label)
+                c = lg.add_chain(e, None, x, first_rank=0, upward=role == "src", port_bottom=port(it, e),
+                                 label=edge.label)
+            if self.hint:  # lanes leaving the block line up with where they are heading
+                far = self.hint[edge.target if role == "src" else edge.source]
+                for d in c.verts:
+                    if lg.verts[d].dummy:
+                        lg.verts[d].index = far
         lg.build_layers()
         order(lg)
         assign_cross(lg)
@@ -193,6 +207,12 @@ class Compound:
                 lanes, jogs, s0, s1 = lanes[::-1], jogs[::-1], s1, s0
             b.frags[c.edge] = Frag(lanes, jogs, s0, s1)
         return b
+
+    def _seed_order(self, lg: LayerGraph, vid: dict[str, int]) -> None:
+        """Initial order from the reference layout (a block sits at the mean of its members)."""
+        for it, i in vid.items():
+            nodes = self.members.get(it, [it])
+            lg.verts[i].index = sum(self.hint[n] for n in nodes) / len(nodes)
 
     def _grid(self, items: list[str], kids: dict[str, Block], insets: tuple[float, float, float, float]) -> Block:
         """Tidy grid of plain nodes (column widths and row heights align); shelf rows when blocks mix in."""
@@ -272,6 +292,25 @@ class Compound:
     # --- placement -------------------------------------------------------------------------
 
     def run(self) -> Placed:
+        out = self._run_once()
+        if self.root == "layered" and self.h.groups:
+            self.hint = self._seeds({k: b[0] for k, b in out.nodes.items()})
+            out = self._run_once()
+        return out
+
+    def _seeds(self, first: dict[str, float]) -> dict[str, float]:
+        """Order keys for a second pass: first-pass positions, except that a node with no
+        links inside its own scope follows its partners outside (data stores, shared services)."""
+        linked = {it for lst in self.scope_edges.values() for _, a, b in lst for it in (a, b)}
+        partners: dict[str, list[float]] = defaultdict(list)
+        for e in self.spec.edges:
+            if e.source != e.target:
+                partners[e.source].append(first[e.target])
+                partners[e.target].append(first[e.source])
+        return {n: sum(partners[n]) / len(partners[n]) if n not in linked and partners[n] else u
+                for n, u in first.items()}
+
+    def _run_once(self) -> Placed:
         root = self.block(None)
         out = Placed({}, {}, {}, {})
         frags: dict[int, dict[Scope, Frag]] = defaultdict(dict)

@@ -356,6 +356,38 @@ class VisioCom:
         self._tick()
 
     @_guard
+    def drop_image(self, name: str, path: str, x: float, y: float, width: float, height: float) -> None:
+        """Page.Import an .svg/.png (Visio 2016+) and fit it, aspect kept, into width x height at (x, y).
+
+        An SVG may arrive as a picture or as a group of converted shapes; either takes text, so
+        the label is set on the imported shape itself. Nothing is left on the page on failure.
+        """
+        p = Path(path).expanduser().resolve()
+        if not p.is_file():
+            raise FileNotFoundError(f"icon file not found: {p}")
+        self._check_new(name)
+        shape = self._page().Import(str(p))
+        try:
+            self._name(shape, name)
+            w0 = float(shape.CellsU("Width").ResultIU) or width
+            h0 = float(shape.CellsU("Height").ResultIU) or height
+            k = min(width / w0, height / h0) if w0 > 0 and h0 > 0 else 1.0
+            _set(shape, "LockAspect", "0")
+            _set(shape, "Width", _inch(round(w0 * k, 4)))
+            _set(shape, "Height", _inch(round(h0 * k, 4)))
+            _set(shape, "PinX", _inch(x))
+            _set(shape, "PinY", _inch(y))
+            _set(shape, "LockAspect", "1")
+            _set(shape, "LockTextEdit", "0")
+        except pywintypes.com_error:
+            try:
+                shape.Delete()
+            except pywintypes.com_error:
+                pass
+            raise
+        self._tick()
+
+    @_guard
     def set_text(self, name: str, text: str) -> None:
         self._find(name).Text = text
         self._rich.discard(name)

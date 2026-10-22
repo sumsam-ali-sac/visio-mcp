@@ -229,6 +229,11 @@ _CONFIG_RE = re.compile(r"^(appsettings(\.[\w\-]+)?\.json|application(-[\w]+)?\.
 _SECRETISH = re.compile(r"pass|secret|token|key|pwd|credential|sas|signature", re.I)
 _HOSTISH = re.compile(r"url|host|endpoint|uri|server|broker|dsn|queue|topic|bucket|database|_api|service", re.I)
 _URL_RE = re.compile(r"https?://([A-Za-z0-9._\-]+)(?::\d+)?")
+# Environment variables read in source: process.env.X, os.environ["X"], os.getenv("X"), Environment.GetEnvironmentVariable("X")
+_ENV_READ_RE = re.compile(
+    r"(?:process\.env\.|import\.meta\.env\.|os\.environ(?:\.get)?[\[(]\s*[\"']|getenv\(\s*[\"']|"
+    r"GetEnvironmentVariable\(\s*\"|System\.getenv\(\s*\"|ENV\[\s*[\"'])([A-Z][A-Z0-9_]{2,})"
+)
 _SKIP_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0", "example.com", "example.org", "w3.org", "schemas.", "github.com",
                "npmjs", "apache.org", "mozilla.org", "microsoft.com", "json-schema.org", "xmlsoap.org",
                "creativecommons", "googleapis.com", "gstatic", "fonts.", "cdn", "readthedocs", "wikipedia", "stackoverflow",
@@ -1027,6 +1032,9 @@ def scan(path: str | Path) -> RepoInfo:
             refs.append(f"{k}={_sanitize_value(v)}")
     for svc_name, svc in info.compose_services.items():
         refs.extend(f"{svc_name}:{h}" for h in svc.get("environment_hints", []))
+    for var in dict.fromkeys(_ENV_READ_RE.findall(blob)):
+        if _HOSTISH.search(var) and not _SECRETISH.search(var):
+            refs.append(f"env:{var}")
     hosts: list[str] = []
     for host in _URL_RE.findall(blob):
         h = host.lower().rstrip(".")
@@ -1068,9 +1076,10 @@ def _finish(info: RepoInfo, all_rel: set[str]) -> None:
 
 
 def _suggest_types(info: RepoInfo, all_rel: set[str]) -> list[str]:
-    out = ["architecture"]
     has_cloud_res = any(r["provider"] in _CLOUD_PRETTY for r in info.resources)
-    if has_cloud_res or info.cloud:
+    iac_first = sum(1 for r in info.resources if r["provider"] in _CLOUD_PRETTY) >= 3 and not info.frameworks
+    out = ["cloud", "architecture"] if iac_first else ["architecture"]
+    if (has_cloud_res or info.cloud) and "cloud" not in out:
         out.append("cloud")
     out.append("c4-container")
     if info.compose_services or info.k8s_objects or info.containers or has_cloud_res:
