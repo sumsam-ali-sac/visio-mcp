@@ -192,7 +192,8 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
             category=category,
             geometry=_geometry(kind, icon, has_master is not None),
             label=n.label,
-            runs=_node_runs(n.label, n.technology, n.description, style.text, theme),
+            runs=_node_runs(n.label, n.technology, n.description, _label_text(style.text, theme, icon, kind),
+                            theme, on_page=icon or bool(kind and kind.geometry == "person")),
             rect=rect,
             shape=shape,
             style=style,
@@ -292,8 +293,17 @@ def _parents_first(groups: list[Group]) -> list[Group]:
     return sorted(groups, key=lambda g: _depth(g, groups))
 
 
-def _node_runs(label: str, technology: str, description: str, text: TextStyle, theme: Theme) -> list[TextRun]:
-    sec = replace(theme.secondary, color=_secondary_color(text, theme))
+def _label_text(text: TextStyle, theme: Theme, icon: bool, kind: catalog.Kind | None) -> TextStyle:
+    """Labels drawn under icons and people sit on the page, so they take the page's text color."""
+    if icon or (kind is not None and kind.geometry == "person"):
+        return replace(text, color=theme.title.color)
+    return text
+
+
+def _node_runs(label: str, technology: str, description: str, text: TextStyle, theme: Theme,
+               on_page: bool = False) -> list[TextRun]:
+    color = theme.subtitle.color if on_page else _secondary_color(text, theme)
+    sec = replace(theme.secondary, color=color)
     runs = [TextRun(label, text)]
     if technology:
         runs.append(TextRun(f"\n[{technology}]", replace(sec, italic=False)))
