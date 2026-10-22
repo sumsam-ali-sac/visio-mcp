@@ -17,7 +17,12 @@ class Kind:
     name: str
     description: str
     candidates: tuple[Shape, ...]  # tried in order; first available wins
-    fill: str | None = None  # default '#RRGGBB'
+    fill: str | None = None  # default '#RRGGBB' (legacy; themes style by category)
+    category: str = "generic"  # style.CATEGORIES: picks the theme style
+    geometry: str = "rect"  # style.GEOMETRY_MIN key: how non-Visio renderers draw it
+    provider: str | None = None  # 'azure' | 'aws' | 'gcp' for cloud service kinds
+    base: str | None = None  # generic kind to fall back to when no provider master exists
+    glyph: str = ""  # 1-3 chars drawn inside the tile when there is no real icon (e.g. 'λ', 'SQL')
 
 
 @dataclass(frozen=True)
@@ -25,6 +30,8 @@ class Resolved:
     shape: Shape
     fill: str | None
     warning: str | None  # set when the kind is unknown or we fell back
+    kind: Kind | None = None  # the resolved kind (None when unknown)
+    icon: bool = False  # the master is an icon: keep its colors, label sits below it
 
 
 FALLBACK = Shape("BASIC_U.VSSX", "Rectangle")
@@ -159,3 +166,9 @@ def resolve(kind: str, has_master: Callable[[str, str], bool]) -> Resolved:
         if has_master(shape.stencil, shape.master):
             return Resolved(shape, k.fill if shape.stencil in _FILLABLE else None, None)
     return Resolved(FALLBACK, k.fill, f"no stencil master available for kind '{kind}', drew a rectangle")
+
+
+def lookup(kind: str) -> Kind | None:
+    """The Kind for a name or alias, or None when unknown."""
+    key = kind.strip().lower()
+    return _BY_NAME.get(_ALIASES.get(key, key))
