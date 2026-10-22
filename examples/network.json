@@ -1,0 +1,29 @@
+{
+  "title": "Office network",
+  "layout": "flowchart-tb",
+  "groups": [
+    {"id": "wan", "label": "Internet"},
+    {"id": "dmz", "label": "DMZ"},
+    {"id": "lan", "label": "Corporate LAN"}
+  ],
+  "nodes": [
+    {"id": "inet", "label": "Internet", "kind": "internet", "group": "wan"},
+    {"id": "fw", "label": "Firewall", "kind": "firewall", "group": "dmz"},
+    {"id": "rtr", "label": "Edge router", "kind": "router", "group": "dmz"},
+    {"id": "web", "label": "Public web server", "kind": "server", "group": "dmz"},
+    {"id": "core", "label": "Core switch", "kind": "switch", "group": "lan"},
+    {"id": "app", "label": "App server", "kind": "server", "group": "lan"},
+    {"id": "db", "label": "DB server", "kind": "server", "group": "lan"},
+    {"id": "pc", "label": "Workstations", "kind": "pc", "group": "lan"}
+  ],
+  "edges": [
+    {"source": "inet", "target": "fw"},
+    {"source": "fw", "target": "rtr"},
+    {"source": "rtr", "target": "web"},
+    {"source": "rtr", "target": "core"},
+    {"source": "core", "target": "app"},
+    {"source": "core", "target": "db"},
+    {"source": "core", "target": "pc"},
+    {"source": "web", "target": "app", "label": "API", "style": "dashed"}
+  ]
+}

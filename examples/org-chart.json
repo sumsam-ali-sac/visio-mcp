@@ -1,0 +1,33 @@
+{
+  "title": "Engineering org chart",
+  "layout": "tree-tb",
+  "nodes": [
+    {"id": "cto", "label": "CTO", "kind": "executive"},
+    {"id": "vp_plat", "label": "VP Platform", "kind": "executive"},
+    {"id": "vp_prod", "label": "VP Product Eng", "kind": "executive"},
+    {"id": "mgr_infra", "label": "Infra manager", "kind": "manager"},
+    {"id": "mgr_data", "label": "Data manager", "kind": "manager"},
+    {"id": "mgr_web", "label": "Web manager", "kind": "manager"},
+    {"id": "mgr_mobile", "label": "Mobile manager", "kind": "manager"},
+    {"id": "sre1", "label": "SRE", "kind": "position"},
+    {"id": "sre2", "label": "SRE", "kind": "position"},
+    {"id": "de1", "label": "Data engineer", "kind": "position"},
+    {"id": "fe1", "label": "Frontend dev", "kind": "position"},
+    {"id": "fe2", "label": "Frontend dev", "kind": "position"},
+    {"id": "mob1", "label": "Mobile dev", "kind": "position"}
+  ],
+  "edges": [
+    {"source": "cto", "target": "vp_plat"},
+    {"source": "cto", "target": "vp_prod"},
+    {"source": "vp_plat", "target": "mgr_infra"},
+    {"source": "vp_plat", "target": "mgr_data"},
+    {"source": "vp_prod", "target": "mgr_web"},
+    {"source": "vp_prod", "target": "mgr_mobile"},
+    {"source": "mgr_infra", "target": "sre1"},
+    {"source": "mgr_infra", "target": "sre2"},
+    {"source": "mgr_data", "target": "de1"},
+    {"source": "mgr_web", "target": "fe1"},
+    {"source": "mgr_web", "target": "fe2"},
+    {"source": "mgr_mobile", "target": "mob1"}
+  ]
+}

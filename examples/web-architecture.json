@@ -1,0 +1,34 @@
+{
+  "title": "Web architecture",
+  "layout": "flowchart-lr",
+  "groups": [
+    {"id": "edge", "label": "Edge"},
+    {"id": "app", "label": "Application"},
+    {"id": "data", "label": "Data"}
+  ],
+  "nodes": [
+    {"id": "user", "label": "Customer", "kind": "user"},
+    {"id": "cdn", "label": "CDN", "kind": "cloud", "group": "edge"},
+    {"id": "lb", "label": "Load balancer", "kind": "loadbalancer", "group": "edge"},
+    {"id": "web", "label": "Web app", "kind": "webapp", "group": "app"},
+    {"id": "gw", "label": "API gateway", "kind": "gateway", "group": "app"},
+    {"id": "orders", "label": "Orders service", "kind": "service", "group": "app"},
+    {"id": "catalog", "label": "Catalog service", "kind": "service", "group": "app"},
+    {"id": "queue", "label": "Event bus", "kind": "queue", "group": "app"},
+    {"id": "cache", "label": "Redis cache", "kind": "cache", "group": "data"},
+    {"id": "db", "label": "Orders DB", "kind": "database", "group": "data"},
+    {"id": "blob", "label": "Product images", "kind": "storage", "group": "data"}
+  ],
+  "edges": [
+    {"source": "user", "target": "cdn", "label": "HTTPS"},
+    {"source": "cdn", "target": "lb"},
+    {"source": "lb", "target": "web"},
+    {"source": "web", "target": "gw", "label": "REST"},
+    {"source": "gw", "target": "orders"},
+    {"source": "gw", "target": "catalog"},
+    {"source": "orders", "target": "db", "label": "SQL"},
+    {"source": "orders", "target": "queue", "label": "events", "style": "dashed"},
+    {"source": "catalog", "target": "cache"},
+    {"source": "catalog", "target": "blob"}
+  ]
+}
