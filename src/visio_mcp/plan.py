@@ -11,6 +11,7 @@ shapes, styles and text for every element. Emitters only draw it:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable, Literal
 
 from visio_mcp import catalog, lint
@@ -55,6 +56,7 @@ class PlannedNode:
     glyph: str = ""
     provider: str | None = None
     emphasis: bool = False
+    image: Path | None = None  # official cloud icon or a custom icon (svg/png) drawn instead of the glyph tile
 
 
 @dataclass
@@ -114,6 +116,7 @@ class DiagramPlan:
     legend_entries: list[tuple[Rect, Rect, LegendEntry]] = field(default_factory=list)  # (sample, text) rects
     warnings: list[str] = field(default_factory=list)
     suggestions: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # what normalize filled in (informational)
 
     def node(self, nid: str) -> PlannedNode:
         return next(n for n in self.nodes if n.id == nid)
@@ -249,7 +252,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
         spec=spec, theme=theme, width=round(width, 3), height=round(height, 3),
         nodes=nodes, groups=groups, edges=edges, title=title, legend=legend,
         legend_title=legend_title, legend_entries=placed,
-        warnings=list(dict.fromkeys(notes + warnings)), suggestions=suggestions,
+        warnings=list(dict.fromkeys(warnings)), suggestions=suggestions, notes=notes,
     )
 
 

@@ -18,6 +18,9 @@ dependencies = [
     "rich>=15.0.0",
 ]
 
+[project.optional-dependencies]
+preview = ["playwright>=1.48"]  # PNG previews without Visio (then: playwright install chromium)
+
 [project.scripts]
 visio-mcp = "visio_mcp.server:main"
 visio-ai = "visio_mcp.cli:main"

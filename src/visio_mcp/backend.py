@@ -76,6 +76,10 @@ class VisioBackend(Protocol):
         width: float | None = None,
         height: float | None = None,
     ) -> None: ...
+    def drop_image(self, name: str, path: str, x: float, y: float, width: float, height: float) -> None:
+        """Import an .svg/.png file as a shape (official cloud icons, custom icons)."""
+        ...
+
     def set_text(self, name: str, text: str) -> None: ...
     def set_rich_text(self, name: str, runs: list[TextRun]) -> None:
         """Replace the shape's text with styled runs (label bold, technology small, ...)."""

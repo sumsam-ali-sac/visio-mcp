@@ -72,6 +72,11 @@ class Node(BaseModel):
     technology: str = Field("", description="Tech in brackets under the label, e.g. 'Python / FastAPI'.")
     description: str = Field("", description="One short sentence shown in small text. Optional.")
     emphasis: bool = Field(False, description="Highlight this node (accent border).")
+    icon: str | None = Field(
+        None,
+        description="Custom icon: path to an .svg or .png file. Cloud kinds get official icons automatically "
+        "once the icon packs are installed (visio-ai icons install).",
+    )
     fill: HexColor | None = Field(None, description="Override fill color, e.g. '#DCEBFF'. Prefer themes.")
     x: float | None = Field(None, description="Inches from left. Only used when layout is 'none'.")
     y: float | None = Field(None, description="Inches from bottom. Only used when layout is 'none'.")

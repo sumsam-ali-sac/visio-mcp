@@ -268,8 +268,10 @@ def _native_previews(plan: DiagramPlan, base: Path, formats: list[str]) -> dict[
         svg_path.write_text(svg.render_svg(plan), encoding="utf-8")
         if "svg" in wanted:
             out["svg"] = svg_path
-    if "png" in wanted and (png := svg.svg_to_png(svg_path, base.with_suffix(".png"))):
-        out["png"] = Path(png)
+    if "png" in wanted:
+        png = svg.svg_to_png(svg_path, base.with_suffix(".png")) or _soffice_convert(base.with_suffix(".vsdx"), "png")
+        if png:
+            out["png"] = Path(png)
     if "pdf" in wanted and (pdf := _soffice_convert(base.with_suffix(".vsdx"), "pdf")):
         out["pdf"] = pdf
     if "html" in wanted:
