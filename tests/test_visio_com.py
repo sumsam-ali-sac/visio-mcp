@@ -40,7 +40,16 @@ def by_name(v) -> dict:
 
 
 def boxes(v):
-    return [s for s in v.shapes() if not (s.is_connector or s.is_container)]
+    """Nodes only: no connectors, containers or decorations (background, title, legend)."""
+    return [s for s in v.shapes() if not (s.is_connector or s.is_container or s.name.startswith("__"))]
+
+
+def shutdown(v):
+    """Close a visible instance without leaving it running: nothing is unsaved after this."""
+    faulthandler.disable()
+    for d in v._app.Documents:
+        d.Saved = True
+    v.close()
 
 
 def overlaps(v) -> list[tuple[str, str]]:
@@ -350,7 +359,7 @@ def test_layout_keeps_background(v):
     v.connect("n0->n1", "n0", "n1")
     v.connect("n0->n2", "n0", "n2")
     v.layout("flowchart-tb")
-    assert overlaps(v) == []  # boxes() includes the background only as a page-sized frame
+    assert overlaps(v) == []
     sheet = v._page().PageSheet
     bg = by_name(v)[BACKGROUND]
     assert round(bg.width, 3) == round(sheet.CellsU("PageWidth").ResultIU, 3)
@@ -383,8 +392,7 @@ def test_live_visible_mode_draws_and_presents(tmp_path):
         v.drop_shape("x", "BASFLO_U.VSSX", "Process", 2.0, 2.0)
         assert saved.endswith("live.vsdx")
     finally:
-        faulthandler.disable()
-        v.close()
+        shutdown(v)
 
 
 def test_attach_falls_back_to_starting_visio(monkeypatch):
@@ -397,8 +405,7 @@ def test_attach_falls_back_to_starting_visio(monkeypatch):
         assert v._owns_app
         assert "a" in _draw_small(v)
     finally:
-        faulthandler.disable()
-        v.close()
+        shutdown(v)
 
 
 def test_attach_never_quits_the_users_visio():
@@ -413,5 +420,4 @@ def test_attach_never_quits_the_users_visio():
         owner.drop_shape("b", "BASFLO_U.VSSX", "Process", 2.0, 2.0)
         assert "b" in by_name(owner)
     finally:
-        faulthandler.disable()
-        owner.close()
+        shutdown(owner)

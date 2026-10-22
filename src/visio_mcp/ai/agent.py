@@ -7,9 +7,10 @@ import json
 import math
 import re
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from pydantic import ValidationError
 
@@ -105,7 +106,7 @@ def _validation_message(exc: ValidationError) -> str:
 
 def extract_spec(text: str) -> DiagramSpec | None:
     """Find a DiagramSpec JSON object in free text (fenced block or bare object); last valid wins."""
-    candidates: list[str] = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.S)
+    candidates: list[str] = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
     dec = json.JSONDecoder()
     i = text.find("{")
     while i != -1:
@@ -297,7 +298,7 @@ class DiagramAgent:
                 if self._cancel.is_set():
                     self._pending = results
                     self._check_cancel()
-                reply = self._model(lambda s: s.send_tool_results(results, note))
+                reply = self._model(lambda s, r=results, n=note: s.send_tool_results(r, n))
                 continue
             # The model ended its turn without calling a tool.
             if self._steps >= self.max_steps or self._submit_nudged:
@@ -327,7 +328,7 @@ class DiagramAgent:
             spec = extract_spec(text)
             if spec is not None:
                 self._emit("status", "Model did not call submit_diagram; using the JSON spec from its reply")
-                spec, notes = self._normalize(spec)
+                spec, _ = self._normalize(spec)
                 self._emit("draft", f"Draft: {len(spec.nodes)} nodes", spec.model_dump_json(exclude_defaults=True))
                 return self._accept(spec, pending)
         self._emit("error", "The model did not submit a diagram.")
@@ -436,8 +437,8 @@ class DiagramAgent:
     # ------------------------------------------------------------ helpers
 
     def _digest(self) -> str:
-        scanner = _mod("scanner")
         try:
+            scanner = _mod("scanner")
             if len(self.repos) == 1:
                 return scanner.digest(self.repos[0])
             return scanner.workspace_digest(self.repos)

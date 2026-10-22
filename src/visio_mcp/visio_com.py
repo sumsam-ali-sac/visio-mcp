@@ -222,7 +222,8 @@ class VisioCom:
     def close(self) -> None:
         """Headless: quit Visio without saving. Visible: leave the user's drawings on screen.
 
-        An attached Visio is never quit; one we started visibly is quit only if no drawing is open.
+        An attached Visio is never quit; one we started visibly is quit only when every open
+        drawing is saved (nothing the user could lose), otherwise it stays up for them.
         """
         try:
             if not self._visible:
@@ -232,7 +233,7 @@ class VisioCom:
             else:
                 self._doc = None
                 drawings = [d for d in self._app.Documents if d.Type == DOC_DRAWING]
-                if self._owns_app and not drawings:
+                if self._owns_app and all(d.Saved for d in drawings):
                     self._app.Quit()
                 else:
                     for s in self._opened_stencils:
@@ -915,6 +916,11 @@ class VisioCom:
 
     def _stencil(self, name: str) -> Any | None:
         key = name.upper()
+        if key in self._stencils:
+            try:
+                self._stencils[key].Name  # the user may have closed it
+            except pywintypes.com_error:
+                del self._stencils[key]
         if key not in self._stencils:
             for d in self._app.Documents:  # the user may already have it docked
                 try:

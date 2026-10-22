@@ -563,7 +563,7 @@ class _Page:
         return s
 
     def line(self, name: str, pts: list[tuple[float, float]], color: str, weight_pt: float, pattern: str,
-             arrow: str, rounding: float = 0.0, routable: bool = False) -> _Shape:
+             arrow: str, rounding: float = 0.0, routable: bool = False, arrow_size: int = ARROW_SIZE) -> _Shape:
         """A 1-D shape following pts (page inches): connector-style transform, begin at local (0, 0)."""
         (bx, by), (ex, ey) = pts[0], pts[-1]
         w, h = ex - bx, ey - by
@@ -586,8 +586,8 @@ class _Page:
             _len("Rounding", rounding),
             _cell("BeginArrow", ARROW_FILLED if arrow == "both" else 0),
             _cell("EndArrow", 0 if arrow == "none" else ARROW_FILLED),
-            _cell("BeginArrowSize", ARROW_SIZE),
-            _cell("EndArrowSize", ARROW_SIZE),
+            _cell("BeginArrowSize", arrow_size),
+            _cell("EndArrowSize", arrow_size),
             _cell("LineCap", 0),
             _cell("FillPattern", 0),
             _cell("ObjType", OBJ_ROUTABLE if routable else OBJ_IGNORE),
@@ -637,6 +637,25 @@ def _label_below(n: PlannedNode) -> tuple[float, float, float, float]:
     return (s.w / 2, (top - th / 2) - s.bottom, tw, th)
 
 
+def _luma(color: str) -> float:
+    c = _color(color)
+    r, g, b = (int(c[i:i + 2], 16) for i in (1, 3, 5))
+    return (r * 299 + g * 587 + b * 114) / 1000
+
+
+def _readable_below(runs: list[TextRun], plan: DiagramPlan) -> list[TextRun]:
+    """A label under an icon sits on the page, not the shape: text styled for a dark node fill
+    (C4 people: white) would vanish, so it takes the page's text colors instead."""
+    bg = _luma(plan.theme.background)
+    out = []
+    for i, r in enumerate(runs):
+        if abs(_luma(r.style.color) - bg) < 90:
+            color = plan.theme.title.color if i == 0 else plan.theme.subtitle.color
+            r = TextRun(r.text, replace(r.style, color=color))
+        out.append(r)
+    return out
+
+
 def _glyph(n: PlannedNode) -> str:
     if n.glyph:
         return n.glyph
@@ -644,10 +663,11 @@ def _glyph(n: PlannedNode) -> str:
     return "".join(w[0] for w in words[:2]).upper() or "?"
 
 
-def _draw_node(page: _Page, n: PlannedNode) -> None:
+def _draw_node(page: _Page, plan: DiagramPlan, n: PlannedNode) -> None:
     st, sh = n.style, n.shape
     geom = n.geometry
     below = geom in ("icon", "person") or n.icon
+    runs = _readable_below(n.runs, plan) if below else n.runs
     if geom == "icon":
         tile = replace(st, fill=st.line or st.fill or "#64748B", line=None, line_weight=0)
         s = page.box(n.id, sh, tile, "icon")
@@ -658,8 +678,8 @@ def _draw_node(page: _Page, n: PlannedNode) -> None:
             sec = Section([("MoveTo", {"X": 0.0, "Y": H(1, band - sh.h)}),
                            ("LineTo", {"X": W(), "Y": H(1, band - sh.h)})], no_fill=True)
             s.sections.append(_geometry_xml([sec], sh.w, sh.h, start_ix=1))
-    page.fonts_of(n.runs)
-    chars, txt = _text_xml(n.runs, "center")
+    page.fonts_of(runs)
+    chars, txt = _text_xml(runs, "center")
     s.sections.insert(0, chars)
     s.text = txt
     if below:
@@ -780,7 +800,7 @@ def _legend_sample(page: _Page, name: str, r: Rect, entry: LegendEntry, plan: Di
     theme = plan.theme
     if entry.sample == "edge":
         return page.line(name, [(r.left, r.y), (r.right, r.y)], entry.color or theme.edge.color,
-                         theme.edge.weight, entry.pattern, "end")
+                         theme.edge.weight, entry.pattern, "end", arrow_size=1)
     style = entry.style or ShapeStyle()
     if entry.sample == "group":
         return page.box(name, r, replace(style, rounding=min(style.rounding, 0.04)), "rect", obj=OBJ_IGNORE)
@@ -819,8 +839,6 @@ def _pages_xml(plan: DiagramPlan) -> str:
         _cell("RouteStyle", 1),
         _len("PageLeftMargin", 0.25), _len("PageRightMargin", 0.25),
         _len("PageTopMargin", 0.25), _len("PageBottomMargin", 0.25),
-        _cell("CenterX", 0), _cell("CenterY", 0), _cell("OnPage", 1),  # print: fit to one sheet
-        _cell("PrintGrid", 0), _cell("PagesX", 1), _cell("PagesY", 1),
     ])
     page = (f'<Page{_attrs(ID=0, NameU="Page-1", Name="Page-1", ViewScale=-1, ViewCenterX=_n(w / 2), ViewCenterY=_n(h / 2))}>'
             f'<PageSheet LineStyle="0" FillStyle="0" TextStyle="0">{sheet}</PageSheet>'
@@ -875,7 +893,7 @@ def _document_xml(fonts: list[str]) -> str:
         _style_sheet(STYLE_TEXT, "Text Only", STYLE_NORMAL, text_only),
     ])
     colors = "".join(f'<ColorEntry IX="{i}" RGB="{c}"/>' for i, c in enumerate(_COLORS))
-    faces = "".join(f"<FaceName{_attrs(NameU=f, Name=f)}/>" for f in (fonts or ["Calibri"]))
+    faces = "".join(f"<FaceName{_attrs(NameU=f)}/>" for f in (fonts or ["Calibri"]))
     settings = (f'<DocumentSettings TopPage="0" DefaultTextStyle="{STYLE_NORMAL}" DefaultLineStyle="{STYLE_NORMAL}" '
                 f'DefaultFillStyle="{STYLE_NORMAL}" DefaultGuideStyle="{STYLE_NONE}">'
                 "<GlueSettings>9</GlueSettings><SnapSettings>65847</SnapSettings><SnapExtensions>34</SnapExtensions>"
@@ -960,7 +978,7 @@ def build_page(plan: DiagramPlan) -> _Page:
         _draw_legend(page, plan)
     first_node = len(page.shapes)
     for n in plan.nodes:
-        _draw_node(page, n)
+        _draw_node(page, plan, n)
     nodes = page.shapes[first_node:]
     page.shapes = page.shapes[:first_node]
     for e in plan.edges:

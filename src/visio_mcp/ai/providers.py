@@ -12,8 +12,9 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from visio_mcp.ai.config import (
     DEFAULT_AZURE_API_VERSION,
@@ -95,7 +96,7 @@ def _call_with_retries(fn: Callable[[], T], classify: Callable[[BaseException], 
             return fn()
         except LLMError:
             raise
-        except Exception as exc:  # noqa: BLE001 - classified below
+        except Exception as exc:  # classified below; unknown errors re-raise
             err = classify(exc)
             if err is None:
                 raise

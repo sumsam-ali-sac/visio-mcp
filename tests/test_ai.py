@@ -425,7 +425,7 @@ def test_anthropic_errors(monkeypatch):
     sleeps: list[float] = []
     monkeypatch.setattr(prov, "_sleep", sleeps.append)
     ok = _amsg([{"type": "text", "text": "ok"}], stop="end_turn")
-    rl = lambda: anthropic.RateLimitError("slow", response=_http(429), body=None)  # noqa: E731
+    rl = lambda: anthropic.RateLimitError("slow", response=_http(429), body=None)
     client = FakeAnthropicClient([rl(), rl(), ok])
     assert prov.AnthropicLLM("m", client=client).start("s", []).send_user("x").text == "ok"
     assert len(sleeps) == 2

@@ -73,6 +73,7 @@ _CONTAINER_NAMES = {"container", "c4-container"}
 _NETWORK_GEAR = {"router", "switch", "firewall", "access-point", "modem", "hub"}
 _MINDMAP_NAMES = {"mindmap-root", "mindmap-topic", "central-idea"}
 _PIPELINE_NAMES = {"pipeline", "build", "test", "deploy"}
+_DATAFLOW_NAMES = {"etl", "data-lake", "data-warehouse"}
 _ARCH_TYPES = {"architecture", "cloud", "dataflow", "c4-context", "c4-container", "deployment"}
 _NO_ORPHAN_TYPES = {"org", "mindmap"}
 _INTERNAL_GROUPS = {"system", "tier", "network", "subnet", "cluster", "zone", "region"}
@@ -138,6 +139,8 @@ def infer_type(spec: DiagramSpec) -> str:
         return "network"
     if gkinds & {"environment", "cluster"} or "server" in names:
         return "deployment"
+    if names & _DATAFLOW_NAMES:
+        return "dataflow"
     return "architecture"
 
 
@@ -422,7 +425,8 @@ def _r_state_events(c: _Ctx):
     if c.type != "state":
         return
     bad = [f"{e.source}->{e.target}" for e in c.spec.edges
-           if not e.label and c.info[e.source].name not in _START_NAMES]
+           if not e.label and c.info[e.source].name not in _START_NAMES
+           and c.info[e.target].name not in _END_NAMES]  # completion transitions need no event
     if bad:
         yield Finding("state-events", "medium", f"Transitions {_names(bad)} are unlabeled; name the triggering "
                       "event, e.g. 'payment received [amount ok] / ship'.")
