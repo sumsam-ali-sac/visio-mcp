@@ -37,13 +37,23 @@ MCP client ──► visio-mcp server ──────────────
   C4 context and container, deployment, network, data flow, pipeline, ERD, org chart,
   swimlane, state machine and mind map — each with conventions, a checklist and an example
   the AI follows. A linter checks specs against them.
-- **172 shape kinds**, including ~100 Azure, AWS and GCP services, mapped to Visio stencils
-  with graceful fallbacks.
+- **Official cloud icons.** 179 shape kinds, including ~100 Azure, AWS and Google Cloud
+  services drawn with the vendors' official architecture icons (`visio-ai icons install`), in
+  Visio, in the `.vsdx` and in previews.
 - **Works without Visio.** On macOS/Linux (or without a Visio license) it writes a native
   `.vsdx` that opens in Visio desktop or Visio for the web, plus SVG, PNG and an interactive
   HTML preview.
 - **Bring your own AI**, or none: a quick draft from a static scan (manifests, docker-compose,
   Terraform/Bicep, Kubernetes, CI workflows) works offline.
+
+## Documentation
+
+[Getting started](docs/getting-started.md) · [The terminal app](docs/cli.md) ·
+[The MCP server](docs/mcp-server.md) · [Writing specs](docs/spec.md) ·
+[Diagram types & rules](docs/reference/diagram-types.md) · [Cloud icons](docs/cloud-icons.md) ·
+[Live Visio](docs/live-visio.md) · [Themes](docs/reference/themes.md) ·
+[Shape kinds](docs/reference/kinds.md) · [How it works](docs/architecture.md) ·
+[Troubleshooting](docs/troubleshooting.md)
 
 ## Install
 
@@ -95,7 +105,8 @@ Then refine by chatting, or use commands:
 | `visio-ai scan PATH [--digest]` | profile repos; `--digest` prints what the AI sees |
 | `visio-ai setup` | choose provider, model and key |
 | `visio-ai handoff PATH --tool claude\|gemini\|codex\|copilot` | register the MCP server with that app and launch it on the repo |
-| `visio-ai doctor` | check Visio, provider, renderers |
+| `visio-ai icons [install\|status\|remove]` | official Azure / AWS / Google Cloud icon packs |
+| `visio-ai doctor` | check Visio, provider, icons, renderers |
 | `visio-ai themes`, `kinds [--provider aws]`, `rules TYPE` | browse themes, shapes and rules |
 | `visio-ai examples` | draw every example in `examples/` |
 

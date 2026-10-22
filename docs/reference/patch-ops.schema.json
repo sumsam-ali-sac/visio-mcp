@@ -1,0 +1,701 @@
+{
+  "$defs": {
+    "AddEdge": {
+      "properties": {
+        "op": {
+          "const": "add_edge",
+          "default": "add_edge",
+          "title": "Op",
+          "type": "string"
+        },
+        "edge": {
+          "$ref": "#/$defs/Edge"
+        }
+      },
+      "required": [
+        "edge"
+      ],
+      "title": "AddEdge",
+      "type": "object"
+    },
+    "AddGroup": {
+      "properties": {
+        "op": {
+          "const": "add_group",
+          "default": "add_group",
+          "title": "Op",
+          "type": "string"
+        },
+        "group": {
+          "$ref": "#/$defs/Group"
+        },
+        "members": {
+          "default": [],
+          "description": "Node ids to move into the new group.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Members",
+          "type": "array"
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "title": "AddGroup",
+      "type": "object"
+    },
+    "AddNode": {
+      "properties": {
+        "op": {
+          "const": "add_node",
+          "default": "add_node",
+          "title": "Op",
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/Node"
+        }
+      },
+      "required": [
+        "node"
+      ],
+      "title": "AddNode",
+      "type": "object"
+    },
+    "Edge": {
+      "properties": {
+        "source": {
+          "description": "Id of the node the edge starts at.",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "description": "Id of the node the edge points to.",
+          "title": "Target",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "description": "Verb or protocol, e.g. 'HTTPS', 'reads', 'yes'. Short.",
+          "title": "Label",
+          "type": "string"
+        },
+        "style": {
+          "default": "solid",
+          "description": "solid = sync call, dashed = async/event, dotted = optional.",
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "arrow": {
+          "default": "end",
+          "enum": [
+            "end",
+            "both",
+            "none"
+          ],
+          "title": "Arrow",
+          "type": "string"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override line color. Prefer themes.",
+          "title": "Color"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "Group": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "default": "generic",
+          "description": "What the container means; drives its styling.",
+          "enum": [
+            "generic",
+            "tier",
+            "system",
+            "boundary",
+            "cloud",
+            "region",
+            "zone",
+            "network",
+            "subnet",
+            "cluster",
+            "environment",
+            "lane",
+            "external"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the enclosing group, for nesting (region > vnet > subnet).",
+          "title": "Parent"
+        },
+        "fill": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fill"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Group",
+      "type": "object"
+    },
+    "Move": {
+      "properties": {
+        "op": {
+          "const": "move",
+          "default": "move",
+          "title": "Op",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y"
+      ],
+      "title": "Move",
+      "type": "object"
+    },
+    "Node": {
+      "properties": {
+        "id": {
+          "description": "Unique id, referenced by edges. Short, no spaces, e.g. 'api'.",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "description": "Text shown on the shape. Defaults to the id. At most ~4 words.",
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "default": "process",
+          "description": "Semantic shape kind, e.g. service, database, queue, user, decision, azure-functions, aws-lambda. Call list_kinds for the full list.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the innermost group (container) this node sits in.",
+          "title": "Group"
+        },
+        "technology": {
+          "default": "",
+          "description": "Tech in brackets under the label, e.g. 'Python / FastAPI'.",
+          "title": "Technology",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "description": "One short sentence shown in small text. Optional.",
+          "title": "Description",
+          "type": "string"
+        },
+        "emphasis": {
+          "default": false,
+          "description": "Highlight this node (accent border).",
+          "title": "Emphasis",
+          "type": "boolean"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Custom icon: path to an .svg or .png file. Cloud kinds get official icons automatically once the icon packs are installed (visio-ai icons install).",
+          "title": "Icon"
+        },
+        "fill": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override fill color, e.g. '#DCEBFF'. Prefer themes.",
+          "title": "Fill"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inches from left. Only used when layout is 'none'.",
+          "title": "X"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inches from bottom. Only used when layout is 'none'.",
+          "title": "Y"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "Relayout": {
+      "properties": {
+        "op": {
+          "const": "relayout",
+          "default": "relayout",
+          "title": "Op",
+          "type": "string"
+        },
+        "layout": {
+          "enum": [
+            "auto",
+            "flowchart-tb",
+            "flowchart-lr",
+            "tree-tb",
+            "tree-lr",
+            "swimlane-lr",
+            "swimlane-tb",
+            "radial",
+            "circular",
+            "grid",
+            "compact",
+            "none"
+          ],
+          "title": "Layout",
+          "type": "string"
+        }
+      },
+      "required": [
+        "layout"
+      ],
+      "title": "Relayout",
+      "type": "object"
+    },
+    "Remove": {
+      "properties": {
+        "op": {
+          "const": "remove",
+          "default": "remove",
+          "title": "Op",
+          "type": "string"
+        },
+        "id": {
+          "description": "Node, group or edge id ('source->target') to delete.",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Remove",
+      "type": "object"
+    },
+    "UpdateDiagram": {
+      "properties": {
+        "op": {
+          "const": "update_diagram",
+          "default": "update_diagram",
+          "title": "Op",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle"
+        },
+        "theme": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Theme"
+        },
+        "layout": {
+          "anyOf": [
+            {
+              "enum": [
+                "auto",
+                "flowchart-tb",
+                "flowchart-lr",
+                "tree-tb",
+                "tree-lr",
+                "swimlane-lr",
+                "swimlane-tb",
+                "radial",
+                "circular",
+                "grid",
+                "compact",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Layout"
+        },
+        "legend": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legend"
+        }
+      },
+      "title": "UpdateDiagram",
+      "type": "object"
+    },
+    "UpdateEdge": {
+      "properties": {
+        "op": {
+          "const": "update_edge",
+          "default": "update_edge",
+          "title": "Op",
+          "type": "string"
+        },
+        "id": {
+          "description": "Edge id 'source->target' (or 'source->target#2' for a repeat).",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "style": {
+          "anyOf": [
+            {
+              "enum": [
+                "solid",
+                "dashed",
+                "dotted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Style"
+        },
+        "arrow": {
+          "anyOf": [
+            {
+              "enum": [
+                "end",
+                "both",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arrow"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "UpdateEdge",
+      "type": "object"
+    },
+    "UpdateNode": {
+      "properties": {
+        "op": {
+          "const": "update_node",
+          "default": "update_node",
+          "title": "Op",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Move into this group; '' takes it out of any group.",
+          "title": "Group"
+        },
+        "technology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Technology"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "emphasis": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Emphasis"
+        },
+        "fill": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fill"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "UpdateNode",
+      "type": "object"
+    }
+  },
+  "items": {
+    "discriminator": {
+      "mapping": {
+        "add_edge": "#/$defs/AddEdge",
+        "add_group": "#/$defs/AddGroup",
+        "add_node": "#/$defs/AddNode",
+        "move": "#/$defs/Move",
+        "relayout": "#/$defs/Relayout",
+        "remove": "#/$defs/Remove",
+        "update_diagram": "#/$defs/UpdateDiagram",
+        "update_edge": "#/$defs/UpdateEdge",
+        "update_node": "#/$defs/UpdateNode"
+      },
+      "propertyName": "op"
+    },
+    "oneOf": [
+      {
+        "$ref": "#/$defs/AddNode"
+      },
+      {
+        "$ref": "#/$defs/UpdateNode"
+      },
+      {
+        "$ref": "#/$defs/UpdateEdge"
+      },
+      {
+        "$ref": "#/$defs/AddGroup"
+      },
+      {
+        "$ref": "#/$defs/UpdateDiagram"
+      },
+      {
+        "$ref": "#/$defs/Remove"
+      },
+      {
+        "$ref": "#/$defs/AddEdge"
+      },
+      {
+        "$ref": "#/$defs/Move"
+      },
+      {
+        "$ref": "#/$defs/Relayout"
+      }
+    ]
+  },
+  "type": "array"
+}

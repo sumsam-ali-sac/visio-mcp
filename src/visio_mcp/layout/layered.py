@@ -54,6 +54,9 @@ class Chain:
     jogs: list[float] = field(default_factory=list)  # v of the crossing between vert i and i+1
     side_top: int = 0  # verts[0] is attached on its -u / +u corner instead of top/bottom
     side_bottom: int = 0
+    side_lane_top: float | None = None  # lane taken right after a side exit (None: the next lane)
+    side_lane_bottom: float | None = None
+    weight: float = 1.0  # pull on coordinate assignment (decision main branch > side branches)
 
     def attach_top(self) -> str | None:
         """Side of verts[0] the edge touches ('start' = upstream face, 'end' = downstream)."""
@@ -322,6 +325,7 @@ def assign_cross(lg: LayerGraph, members: set[int] | None = None, iterations: in
     pool-adjacent-violators) against its neighbours, sweeping down and up repeatedly.
     """
     layers = [[v for v in layer if members is None or v in members] for layer in lg.layers]
+    mark_branches(lg)
     up: list[list[tuple[int, float, float]]] = [[] for _ in lg.verts]  # (nbr, weight, offset)
     down: list[list[tuple[int, float, float]]] = [[] for _ in lg.verts]
     for s in lg.segs():
@@ -329,6 +333,7 @@ def assign_cross(lg: LayerGraph, members: set[int] | None = None, iterations: in
             continue
         va, vb = lg.verts[s.a], lg.verts[s.b]
         w = 8.0 if va.dummy and vb.dummy else 2.0 if va.dummy or vb.dummy else 1.0
+        w *= lg.chains[s.chain].weight
         off = lg.port(s, True) - lg.port(s, False)
         up[s.b].append((s.a, w, off))
         down[s.a].append((s.b, w, -off))
@@ -347,6 +352,36 @@ def assign_cross(lg: LayerGraph, members: set[int] | None = None, iterations: in
             _place_rank(lg, layers[r], up, down if both else None)
         for r in range(n - 2, -1, -1):
             _place_rank(lg, layers[r], down, up if both else None)
+
+
+def mark_branches(lg: LayerGraph) -> None:
+    """A decision's branch toward most of the remaining flow stays straight; the others go sideways."""
+    succ: dict[int, list[int]] = {}
+    for c in lg.chains:
+        if not c.upward and not c.open_top and not c.open_bottom:
+            succ.setdefault(c.verts[0], []).append(c.verts[-1])
+    memo: dict[int, int] = {}
+
+    def reach(v: int) -> int:
+        if v not in memo:
+            seen, stack = {v}, [v]
+            while stack:
+                for w in succ.get(stack.pop(), []):
+                    if w not in seen:
+                        seen.add(w)
+                        stack.append(w)
+            memo[v] = len(seen)
+        return memo[v]
+
+    for vi, vert in enumerate(lg.verts):
+        if not vert.decision:
+            continue
+        outs = [c for c in lg.chains if c.verts[0] == vi and not c.upward and not c.open_top]
+        if len(outs) < 2:
+            continue
+        main = max(outs, key=lambda c: 0 if c.open_bottom else reach(c.verts[-1]))
+        for c in outs:
+            c.weight = 4.0 if c is main else 0.5
 
 
 def _place_rank(lg: LayerGraph, layer: list[int], nbrs: list, extra: list | None) -> None:
@@ -446,27 +481,30 @@ def _side_exits(lg: LayerGraph, sides: dict[tuple[int, str], list[_Attach]]) -> 
     for (vi, face), items in sides.items():
         me = verts[vi]
         half = me.cw / 2
-        chosen: dict[int, _Attach] = {}
-        for a in items:
+        outs = [a for a in items if a.outgoing]
+        fork = me.decision and len(outs) >= 2
+        main = max(outs, key=lambda a: (lg.chains[a.chain].weight, -abs(a.anchor - me.u))) if fork else None
+        chosen: dict[int, tuple[_Attach, float | None]] = {}
+        for a in sorted(items, key=lambda a: abs(a.anchor - me.u)):
             c = lg.chains[a.chain]
             back = c.upward and len(c.verts) > 1 and not (c.open_top or c.open_bottom)
-            fork = me.decision and a.outgoing and sum(x.outgoing for x in items) >= 2
-            if not (back or fork):
-                continue
             d = a.anchor - me.u
-            if abs(d) <= half + 0.05:
+            if fork and a.outgoing and a is not main:
+                sign = (1 if d > 0 else -1) if abs(d) > 1e-6 else (-1 if 1 in chosen else 1)
+                lane = None if abs(d) > half + 0.25 else me.u + sign * (half + 0.3)
+            elif back and abs(d) > half + 0.05:
+                sign, lane = (1 if d > 0 else -1), None
+            else:
                 continue
-            sign = 1 if d > 0 else -1
-            if sign in chosen and abs(chosen[sign].anchor - me.u) <= abs(d):
-                continue
-            if _free(lg, vi, sign, a.anchor):
-                chosen[sign] = a
-        for sign, a in chosen.items():
+            reach_to = a.anchor if lane is None else lane
+            if sign not in chosen and _free(lg, vi, sign, reach_to if sign * (reach_to - me.u) > 0 else me.u):
+                chosen[sign] = (a, lane)
+        for sign, (a, lane) in chosen.items():
             c = lg.chains[a.chain]
             if a.top:
-                c.side_top = sign
+                c.side_top, c.side_lane_top = sign, lane
             else:
-                c.side_bottom = sign
+                c.side_bottom, c.side_lane_bottom = sign, lane
             items.remove(a)
 
 
@@ -492,7 +530,7 @@ def _spread(lg: LayerGraph, vi: int, items: list[_Attach], spread: bool) -> None
     half = me.cw / 2
     m = min(0.15, half * 0.3)
     lo, hi = me.u - half + m, me.u + half - m
-    if not spread:
+    if not spread or me.decision:
         for a in items:
             _set_port(lg, a, 0.0)
         return
@@ -532,10 +570,16 @@ def _lanes(lg: LayerGraph, c: Chain) -> None:
     lanes[0] += c.port_top or 0.0
     if len(lanes) > 1:
         lanes[-1] += c.port_bottom or 0.0
+    # near-equal neighbouring lanes are drawn as one straight line (dummies, or a node end)
+    for i in range(1, len(lanes)):
+        kind = verts[c.verts[i]].kind
+        node_end = kind == "node" and i == len(lanes) - 1 and not c.open_bottom
+        if abs(lanes[i] - lanes[i - 1]) < 0.06 and (kind == "dummy" or node_end):
+            lanes[i] = lanes[i - 1]
     if c.side_top and len(lanes) > 1:
-        lanes[0] = lanes[1]
+        lanes[0] = c.side_lane_top if c.side_lane_top is not None else lanes[1]
     if c.side_bottom and len(lanes) > 1:
-        lanes[-1] = lanes[-2]
+        lanes[-1] = c.side_lane_bottom if c.side_lane_bottom is not None else lanes[-2]
     c.lanes = lanes
 
 
@@ -595,7 +639,7 @@ def _tracks(jogs: list[tuple[float, float, tuple, int, int, bool]]) -> tuple[int
     assign: dict[tuple[int, int], int] = {}
     for lo, hi, key, ci, i, _ in order:
         for t, used in enumerate(tracks):
-            if all(k == key or hi < l2 - 0.12 or lo > h2 + 0.12 for l2, h2, k in used):
+            if all(k == key for _, _, k in used):
                 used.append((lo, hi, key))
                 assign[(ci, i)] = t
                 break
