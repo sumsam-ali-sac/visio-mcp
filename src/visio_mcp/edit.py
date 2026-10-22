@@ -24,7 +24,7 @@ def apply_ops(backend: VisioBackend, ops: list[PatchOp]) -> RenderResult:
     for i, op in enumerate(ops, 1):
         try:
             warnings += _apply(backend, op) or []
-        except (KeyError, ValueError) as e:
+        except (KeyError, ValueError, RuntimeError) as e:
             msg = e.args[0] if isinstance(e, KeyError) and e.args else str(e)
             warnings.append(f"op {i} ({op.op} {_target(op)!r}): {msg}")
 

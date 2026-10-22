@@ -37,9 +37,9 @@ We'll know we're right when **a 20–40 node diagram renders from one spec with 
 ## Delivery Milestones
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | Render from spec | A JSON spec becomes a laid-out .vsdx + PNG in one call | pending | — |
-| 2 | Refine & inspect | Agent can list, patch and re-layout shapes, then re-export | pending | — |
-| 3 | Portable authoring | Built-in prompt + examples work in Claude Code and an Azure OpenAI client | pending | — |
+| 1 | Render from spec | A JSON spec becomes a laid-out .vsdx + PNG in one call | complete | visio-mcp.plan.md |
+| 2 | Refine & inspect | Agent can list, patch and re-layout shapes, then re-export | complete | visio-mcp.plan.md |
+| 3 | Portable authoring | Built-in prompt + examples work in Claude Code and an Azure OpenAI client | in-progress (prompt + examples done; client runs not yet verified) | visio-mcp.plan.md |
 | 4 | Sequence / swimlane | Custom layout for diagram types Visio can't auto-layout | pending | — |
 
 ## Open Questions

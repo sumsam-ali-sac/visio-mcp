@@ -127,9 +127,11 @@ class VisioCom:
     @_guard
     def export(self, path: str) -> str:
         target = Path(path).resolve()
+        ext = target.suffix.lower()
+        if ext not in (".png", ".svg", ".jpg", ".jpeg", ".pdf"):
+            raise ValueError(f"unsupported export format {ext!r} (use png, svg, jpg or pdf)")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.unlink(missing_ok=True)
-        ext = target.suffix.lower()
         if ext in (".png", ".svg", ".jpg", ".jpeg"):
             self._page().Export(str(target))
         elif ext == ".pdf":
@@ -137,8 +139,6 @@ class VisioCom:
             self._need_doc().ExportAsFixedFormat(
                 FIXED_FORMAT_PDF, str(target), 0, PRINT_FROM_TO, index, index
             )
-        else:
-            raise ValueError(f"unsupported export format {ext!r} (use png, svg, jpg or pdf)")
         if not target.exists() or target.stat().st_size == 0:
             raise RuntimeError(f"Visio export produced no file at {target}")
         return str(target)

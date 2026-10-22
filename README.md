@@ -156,7 +156,7 @@ Kinds (node `kind`) include `process`, `decision`, `start`, `end`, `service`, `a
 | `render_diagram` | Draw a whole spec in one call; saves `.vsdx` and exports; returns overlaps, warnings, and a PNG preview |
 | `patch_diagram` | Apply patch ops to the open diagram, then re-save and re-export |
 | `inspect_diagram` | List shapes, connectors, and overlapping pairs on the open page |
-| `open_diagram` | Open an existing `.vsdx` for inspection and patching |
+| `open_diagram` | Open an existing `.vsdx` for inspection and patching (patches save over it) |
 | `export_diagram` | Export the open page to png, svg, pdf, or jpg |
 | `list_kinds` | Semantic node kinds and what each is for |
 | `list_stencils` | Built-in Visio stencil files on this machine |
@@ -169,7 +169,7 @@ Prompt: `diagram` (`subject`, `source` = `prompt` or `repo`).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `VISIO_MCP_OUT` | `./diagrams` | Directory for `.vsdx` and exports |
+| `VISIO_MCP_OUT` | `~/Documents/visio-mcp` | Directory for `.vsdx` and exports. If a file is open in Visio, the server saves as `name-2.vsdx` instead. |
 | `VISIO_MCP_VISIBLE` | unset | Set to `1` to watch Visio draw the diagram |
 
 ## Development
@@ -177,6 +177,7 @@ Prompt: `diagram` (`subject`, `source` = `prompt` or `repo`).
 ```powershell
 uv run pytest            # unit tests, no Visio needed
 uv run pytest -m visio   # real Visio tests (needs Visio installed)
+uv run python scripts/smoke.py   # render every example end to end into diagrams/smoke/
 ```
 
 ## License

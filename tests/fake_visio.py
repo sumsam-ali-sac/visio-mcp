@@ -33,9 +33,11 @@ class FakeVisio:
         self.new_document(Path(path).stem)
 
     def save(self, path: str) -> str:
-        p = str(Path(path).resolve())
-        self.files.append(p)
-        return p
+        p = Path(path).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"fake")
+        self.files.append(str(p))
+        return str(p)
 
     def export(self, path: str) -> str:
         return self.save(path)
