@@ -1,6 +1,7 @@
 {
   "title": "Order data model",
-  "layout": "flowchart-lr",
+  "subtitle": "Logical model · crow’s foot cardinality",
+  "type": "erd",
   "nodes": [
     {"id": "customer", "label": "Customer", "kind": "entity"},
     {"id": "address", "label": "Address", "kind": "entity"},
@@ -11,11 +12,11 @@
     {"id": "payment", "label": "Payment", "kind": "entity"}
   ],
   "edges": [
-    {"source": "customer", "target": "address", "label": "1 to many", "arrow": "none"},
-    {"source": "customer", "target": "order", "label": "places", "arrow": "none"},
-    {"source": "order", "target": "order_item", "label": "contains", "arrow": "none"},
-    {"source": "order_item", "target": "product", "label": "refers to", "arrow": "none"},
-    {"source": "product", "target": "category", "label": "belongs to", "arrow": "none"},
-    {"source": "order", "target": "payment", "label": "paid by", "arrow": "none"}
+    {"source": "customer", "target": "address", "label": "has (1:N)", "arrow": "none"},
+    {"source": "customer", "target": "order", "label": "places (1:N)", "arrow": "none"},
+    {"source": "order", "target": "order_item", "label": "contains (1:N)", "arrow": "none"},
+    {"source": "order_item", "target": "product", "label": "refers to (N:1)", "arrow": "none"},
+    {"source": "product", "target": "category", "label": "belongs to (N:1)", "arrow": "none"},
+    {"source": "order", "target": "payment", "label": "paid by (1:0..1)", "arrow": "none"}
   ]
 }

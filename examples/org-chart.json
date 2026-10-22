@@ -1,6 +1,7 @@
 {
   "title": "Engineering org chart",
-  "layout": "tree-tb",
+  "subtitle": "Reporting lines · Q3",
+  "type": "org",
   "nodes": [
     {"id": "cto", "label": "CTO", "kind": "executive"},
     {"id": "vp_plat", "label": "VP Platform", "kind": "executive"},

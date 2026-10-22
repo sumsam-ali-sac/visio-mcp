@@ -1,10 +1,11 @@
 {
   "title": "Office network",
-  "layout": "flowchart-tb",
+  "subtitle": "Physical topology · HQ site",
+  "type": "network",
   "groups": [
-    {"id": "wan", "label": "Internet"},
-    {"id": "dmz", "label": "DMZ"},
-    {"id": "lan", "label": "Corporate LAN"}
+    {"id": "wan", "label": "Internet", "kind": "external"},
+    {"id": "dmz", "label": "DMZ", "kind": "boundary"},
+    {"id": "lan", "label": "Corporate LAN", "kind": "network"}
   ],
   "nodes": [
     {"id": "inet", "label": "Internet", "kind": "internet", "group": "wan"},
@@ -17,13 +18,13 @@
     {"id": "pc", "label": "Workstations", "kind": "pc", "group": "lan"}
   ],
   "edges": [
-    {"source": "inet", "target": "fw"},
-    {"source": "fw", "target": "rtr"},
-    {"source": "rtr", "target": "web"},
-    {"source": "rtr", "target": "core"},
-    {"source": "core", "target": "app"},
-    {"source": "core", "target": "db"},
-    {"source": "core", "target": "pc"},
+    {"source": "inet", "target": "fw", "label": "WAN uplink"},
+    {"source": "fw", "target": "rtr", "label": "filtered"},
+    {"source": "rtr", "target": "web", "label": "DMZ VLAN"},
+    {"source": "rtr", "target": "core", "label": "10 GbE"},
+    {"source": "core", "target": "app", "label": "VLAN 20"},
+    {"source": "core", "target": "db", "label": "VLAN 30"},
+    {"source": "core", "target": "pc", "label": "VLAN 10"},
     {"source": "web", "target": "app", "label": "API", "style": "dashed"}
   ]
 }

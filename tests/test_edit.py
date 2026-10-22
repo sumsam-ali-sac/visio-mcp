@@ -26,6 +26,7 @@ def fake_catalog(monkeypatch):
         return Resolved(Shape("BASFLO_U.VSSX", "Process"), None, None)
 
     monkeypatch.setattr(catalog, "resolve", resolve)
+    monkeypatch.setattr(catalog, "lookup", lambda kind: None)
 
 
 @pytest.fixture
@@ -81,7 +82,7 @@ def test_add_node_is_placed_clear_of_existing(drawn):
     result = apply_ops(drawn, ops)
     assert result.overlaps == []
     assert drawn.items["n0"].text == "n0"
-    assert drawn.fills["n2"] == "#AABBCC"
+    assert drawn.styles["n2"]["style"].fill == "#AABBCC"
     assert result.warnings == []
 
 

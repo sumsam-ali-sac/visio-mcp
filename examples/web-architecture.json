@@ -1,10 +1,11 @@
 {
   "title": "Web architecture",
-  "layout": "flowchart-lr",
+  "subtitle": "Container view · production",
+  "type": "architecture",
   "groups": [
-    {"id": "edge", "label": "Edge"},
-    {"id": "app", "label": "Application"},
-    {"id": "data", "label": "Data"}
+    {"id": "edge", "label": "Edge", "kind": "tier"},
+    {"id": "app", "label": "Application", "kind": "tier"},
+    {"id": "data", "label": "Data", "kind": "tier"}
   ],
   "nodes": [
     {"id": "user", "label": "Customer", "kind": "user"},
@@ -21,14 +22,14 @@
   ],
   "edges": [
     {"source": "user", "target": "cdn", "label": "HTTPS"},
-    {"source": "cdn", "target": "lb"},
-    {"source": "lb", "target": "web"},
+    {"source": "cdn", "target": "lb", "label": "HTTPS"},
+    {"source": "lb", "target": "web", "label": "HTTP"},
     {"source": "web", "target": "gw", "label": "REST"},
-    {"source": "gw", "target": "orders"},
-    {"source": "gw", "target": "catalog"},
+    {"source": "gw", "target": "orders", "label": "REST"},
+    {"source": "gw", "target": "catalog", "label": "REST"},
     {"source": "orders", "target": "db", "label": "SQL"},
     {"source": "orders", "target": "queue", "label": "events", "style": "dashed"},
-    {"source": "catalog", "target": "cache"},
-    {"source": "catalog", "target": "blob"}
+    {"source": "catalog", "target": "cache", "label": "reads"},
+    {"source": "catalog", "target": "blob", "label": "fetches images"}
   ]
 }
