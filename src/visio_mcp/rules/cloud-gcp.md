@@ -33,8 +33,9 @@ scopes as containers, user on the left.
 - Security: `gcp-iam`, `gcp-secret-manager`, `gcp-cloud-armor`.
 - AI/analytics/DevOps: `gcp-vertex-ai`, `gcp-dataproc`, `gcp-cloud-build`.
 - Operations: `gcp-cloud-monitoring`, `gcp-cloud-logging`.
-- A service with no kind yet (Eventarc, AlloyDB, Looker): use the generic kind
-  (`queue`, `database`, `document`) and the official name in `technology`.
+- Also: `gcp-eventarc`, `gcp-alloydb`, `gcp-looker`.
+- A service with no kind yet: use the generic kind (`queue`, `database`, `service`)
+  and the official name in `technology`.
 
 ## Naming
 Official names: `Cloud Run`, `Cloud Storage` (not GCS in labels), `BigQuery`,

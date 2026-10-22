@@ -33,8 +33,9 @@ Microsoft writes them, scopes drawn as nested containers, request path left to r
   `azure-vnet`, `azure-dns`, `azure-cdn`.
 - Security/identity: `azure-key-vault`, `azure-entra-id`, `azure-firewall`,
   `azure-bastion`.
-- AI and analytics: `azure-openai`, `azure-cognitive-search` (label it `Azure AI
-  Search`), `azure-databricks`, `azure-synapse`.
+- AI and analytics: `azure-openai`, `azure-ai-search`, `azure-machine-learning`,
+  `azure-databricks`, `azure-synapse`.
+- Private networking: `azure-private-endpoint` inside the subnet that consumes it.
 - Operations: `azure-monitor`, `azure-app-insights`, `azure-log-analytics`.
 - A service with no kind yet: use the generic kind (`database`, `service`, `queue`)
   and the official name in `technology`.

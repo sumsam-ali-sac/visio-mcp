@@ -379,5 +379,5 @@ def test_findings_capped():
     assert out[-1].startswith("[more]")
 
 
-def test_every_rule_code_is_documented():
+def test_rule_codes_unique():
     assert len(set(lint.RULE_CODES)) == len(lint.RULE_CODES)

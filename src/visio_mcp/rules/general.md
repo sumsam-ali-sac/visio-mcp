@@ -99,6 +99,34 @@ system), a **deployment** view (where containers run), and a **dataflow** or
 - One level of abstraction per diagram: do not mix a "Payments System" box with
   individual Lambda functions from another system.
 
+## Lint codes
+`render_diagram` returns findings as `[code] message`, most important first. Fix them
+with `patch_diagram` or a corrected spec.
+
+| Code | Means |
+|---|---|
+| `[size]` | More than 30 nodes: split the diagram. |
+| `[decision]` | A decision lacks two labeled branches. |
+| `[lane]` | Swimlane step outside a lane, or no lanes. |
+| `[orphan]` | Node with no edges. |
+| `[terminal]` | Flowchart without start/end, state machine without initial state. |
+| `[c4-context]` | Containers drawn in a context diagram. |
+| `[provider-kinds]` / `[mixed-providers]` | Cloud diagram without provider kinds, or mixing providers. |
+| `[unknown-kind]` | Kind not in `list_kinds`; it draws as a plain rectangle. |
+| `[label-length]` / `[edge-label-length]` | Node label over 5 words / edge label over 4 words. |
+| `[duplicate-label]` | Two nodes with the same name. |
+| `[erd-cardinality]` | ERD relationship without cardinality. |
+| `[state-events]` | State transition without its event. |
+| `[edge-labels]` | Most edges unlabeled in an architecture-style diagram. |
+| `[external-placement]` | External system inside an internal group. |
+| `[nesting]` / `[nesting-order]` | Groups too deep, or nested inner-to-outer. |
+| `[layout]` | Layout does not suit the type (lanes, trees). |
+| `[emphasis]` / `[colors]` | Too many highlights or custom colors. |
+| `[title]` | Missing specific title or subtitle. |
+| `[single-member]` | Group framing one node. |
+| `[bidirectional]` | Too many two-way edges. |
+| `[self-loop]` / `[duplicate-edge]` | Edge to itself (outside state machines), repeated edge. |
+
 ## Checklist
 - [ ] One question, one audience, 5-30 nodes
 - [ ] Right type and layout; type set explicitly

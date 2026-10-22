@@ -253,6 +253,8 @@ def geometry(kind: str, w: float, h: float, rounding: float = 0.0) -> list[Secti
             _earc(W(0.5), b, W(0.75), b - a, (w / 4) / a),
             _earc(0.0, b, W(0.25), b + a, (w / 4) / a),
         ])]
+    # Visio fills overlapping geometry sections alternately (overlaps become holes), so
+    # caps and bodies share an edge instead of overlapping
     if kind == "cylinder":
         ry = min(0.14 * h, 0.16 * w, 0.16)
         ratio = (w / 2) / ry
@@ -261,7 +263,7 @@ def geometry(kind: str, w: float, h: float, rounding: float = 0.0) -> list[Secti
             ("LineTo", {"X": 0.0, "Y": ry}),
             _earc(W(), ry, W(0.5), 0.0, ratio),
             ("LineTo", {"X": W(), "Y": H(1, -ry)}),
-            _earc(0.0, H(1, -ry), W(0.5), H(), ratio),
+            _earc(0.0, H(1, -ry), W(0.5), H(1, -2 * ry), ratio),
         ])
         top = _ellipse(W(0.5), H(1, -ry), W(), H(1, -ry), W(0.5), H())
         return [body, top]
@@ -272,7 +274,7 @@ def geometry(kind: str, w: float, h: float, rounding: float = 0.0) -> list[Secti
             ("MoveTo", {"X": rx, "Y": H()}),
             _earc(rx, 0.0, 0.0, H(0.5), ratio),
             ("LineTo", {"X": W(1, -rx), "Y": 0.0}),
-            _earc(W(1, -rx), H(), W(), H(0.5), ratio),
+            _earc(W(1, -rx), H(), W(1, -2 * rx), H(0.5), ratio),
             ("LineTo", {"X": rx, "Y": H()}),
         ])
         cap = _ellipse(W(1, -rx), H(0.5), W(), H(0.5), W(1, -rx), H())
@@ -282,7 +284,7 @@ def geometry(kind: str, w: float, h: float, rounding: float = 0.0) -> list[Secti
     if kind == "note":
         f = min(0.2 * min(w, h), 0.2)
         body = _poly([(0.0, 0.0), (W(), 0.0), (W(), H(1, -f)), (W(1, -f), H()), (0.0, H())])
-        fold = _poly([(W(1, -f), H()), (W(1, -f), H(1, -f)), (W(), H(1, -f))])
+        fold = _poly([(W(1, -f), H()), (W(1, -f), H(1, -f)), (W(), H(1, -f))], no_fill=True, closed=False)
         return [body, fold]
     if kind == "subprocess":
         d = min(0.1, 0.08 * w)

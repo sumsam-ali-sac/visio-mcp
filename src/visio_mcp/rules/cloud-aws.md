@@ -33,8 +33,9 @@ names with the Amazon/AWS prefix as AWS writes them, and the standard group nest
 - Security: `aws-iam`, `aws-cognito`, `aws-waf`, `aws-secrets-manager`, `aws-kms`.
 - AI: `aws-bedrock`, `aws-sagemaker`.
 - Operations: `aws-cloudwatch`.
-- A service with no kind yet (NAT gateway, OpenSearch): use the generic kind
-  (`gateway`, `search`) and the official name in `technology`.
+- Also: `aws-nat-gateway` (in a public subnet), `aws-opensearch`.
+- A service with no kind yet: use the generic kind (`gateway`, `search`, `service`)
+  and the official name in `technology`.
 
 ## Naming
 Official names keep their prefix: `Amazon S3`, `Amazon DynamoDB`, `AWS Lambda`,

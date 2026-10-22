@@ -16,7 +16,7 @@
     {"id": "web", "label": "Chat Web App", "kind": "azure-app-service", "technology": "React", "group": "app"},
     {"id": "api", "label": "Orchestrator", "kind": "azure-container-apps", "technology": "Python / FastAPI", "group": "app", "emphasis": true},
     {"id": "ingest", "label": "Ingestion", "kind": "azure-functions", "group": "app"},
-    {"id": "search", "label": "AI Search", "kind": "azure-cognitive-search", "group": "data"},
+    {"id": "search", "label": "AI Search", "kind": "azure-ai-search", "group": "data"},
     {"id": "docs", "label": "Documents", "kind": "azure-blob-storage", "group": "data"},
     {"id": "history", "label": "Chat History", "kind": "azure-cosmos-db", "group": "data"},
     {"id": "aoai", "label": "Azure OpenAI", "kind": "azure-openai", "technology": "GPT-4o", "group": "shared"},

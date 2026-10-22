@@ -206,7 +206,10 @@ _CLOUD_KINDS: tuple[Kind, ...] = (
     _c(_AZ, "redis", "Azure Cache for Redis.", "data", "Rds", "cache", (_AZ_GEN, "Cache")),
     _c(_AZ, "storage-account", "Azure Storage account (blob, files).", "data", "Stg", "storage", (_AZ_ENT, "Storage"), ("AZURESTORAGE_U.VSSX", "Storage Accounts")),
     _c(_AZ, "blob-storage", "Azure Blob Storage.", "data", "Blob", "storage", ("AZURESTORAGE_U.VSSX", "Blob Storage"), (_AZ_ENT, "Storage")),
-    _c(_AZ, "cognitive-search", "Azure AI Search.", "data", "AIS", "search", ("AZUREAI_U.VSSX", "Cognitive Search")),
+    _c(_AZ, "ai-search", "Azure AI Search (formerly Cognitive Search).", "data", "AIS", "search",
+       ("AZUREAI_U.VSSX", "Cognitive Search")),
+    _c(_AZ, "machine-learning", "Azure Machine Learning workspace.", "compute", "ML", "ml-model"),
+    _c(_AZ, "private-endpoint", "Azure Private Endpoint.", "network", "PE", "gateway"),
     _c(_AZ, "synapse", "Azure Synapse Analytics.", "data", "Syn", "data-warehouse", ("AZUREDATABASES_U.VSSX", "Synapse Analytics")),
     _c(_AZ, "databricks", "Azure Databricks.", "compute", "DBX", "etl", ("AZUREANALYTICS_U.VSSX", "Azure Databricks")),
     _c(_AZ, "data-factory", "Azure Data Factory.", "integration", "ADF", "etl", ("AZUREANALYTICS_U.VSSX", "Data Factory")),
@@ -254,6 +257,8 @@ _CLOUD_KINDS: tuple[Kind, ...] = (
     _c(_AWS, "alb", "Application / Elastic Load Balancer.", "network", "ALB", "loadbalancer", ("AWSNETWORK_U.VSSX", "Elastic Load Balancing")),
     _c(_AWS, "vpc", "Amazon VPC.", "network", "VPC", "cloud", ("AWSNETWORK_U.VSSX", "Amazon VPC")),
     _c(_AWS, "waf", "AWS WAF.", "security", "WAF", "waf", ("AWSSECURITY_U.VSSX", "AWS WAF")),
+    _c(_AWS, "nat-gateway", "AWS NAT gateway.", "network", "NAT", "gateway"),
+    _c(_AWS, "opensearch", "Amazon OpenSearch Service.", "data", "OS", "search"),
     _c(_AWS, "iam", "AWS IAM.", "security", "IAM", "identity", ("AWSSECURITY_U.VSSX", "AWS IAM")),
     _c(_AWS, "cognito", "Amazon Cognito.", "security", "Cog", "identity", ("AWSSECURITY_U.VSSX", "Amazon Cognito")),
     _c(_AWS, "kms", "AWS KMS.", "security", "KMS", "secrets", ("AWSSECURITY_U.VSSX", "AWS KMS")),
@@ -277,6 +282,9 @@ _CLOUD_KINDS: tuple[Kind, ...] = (
     _c(_GCP, "memorystore", "Google Memorystore (Redis).", "data", "Mem", "cache"),
     _c(_GCP, "artifact-registry", "Google Artifact Registry.", "data", "AR", "registry"),
     _c(_GCP, "pubsub", "Google Pub/Sub.", "integration", "P/S", "topic"),
+    _c(_GCP, "eventarc", "Google Eventarc event routing.", "integration", "EA", "topic"),
+    _c(_GCP, "alloydb", "Google AlloyDB for PostgreSQL.", "data", "ADB", "database"),
+    _c(_GCP, "looker", "Looker BI.", "client", "LK", "webapp"),
     _c(_GCP, "dataflow", "Google Dataflow.", "integration", "DF", "etl"),
     _c(_GCP, "dataproc", "Google Dataproc.", "compute", "DP", "etl"),
     _c(_GCP, "api-gateway", "Google API Gateway.", "integration", "APIGW", "gateway"),
@@ -297,6 +305,7 @@ _CLOUD_KINDS: tuple[Kind, ...] = (
 _BY_NAME: dict[str, Kind] = {k.name: k for k in _KINDS + _CLOUD_KINDS}
 
 _ALIASES = {
+    "azure-cognitive-search": "azure-ai-search",
     "db": "database",
     "postgres": "database",
     "postgresql": "database",
