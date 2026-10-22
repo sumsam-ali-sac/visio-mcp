@@ -297,6 +297,7 @@ def studio(args: Any) -> int:
             if s.spec is None:
                 continue
             console.print(ui.panel(spec_tree(s.spec), title="Draft"))
+            _offer_icons(s.spec)
 
             # 4. draw
             ui.step(4, 4, "Draw")
@@ -317,6 +318,32 @@ def studio(args: Any) -> int:
             drawer.close()
     ui.hint("Saved in " + str(s.out_dir or engine.default_out_dir()))
     return 0
+
+
+_icons_offered: set[str] = set()
+
+
+def _offer_icons(spec: DiagramSpec) -> None:
+    """Cloud diagram without the provider's icon pack: offer once to install the official icons."""
+    from visio_mcp import icons
+
+    missing = [p for p in icons.missing_for([n.kind for n in spec.nodes]) if p not in _icons_offered]
+    if not missing:
+        return
+    _icons_offered.update(missing)
+    names = " and ".join(icons.PROVIDER_NAMES[p] for p in missing)
+    if not ui.confirm(f"Install the official {names} icons now? (recommended)", default=True):
+        ui.hint("Later: visio-ai icons install")
+        return
+    for p in missing:
+        try:
+            with ui.spinner(f"Fetching the official {icons.PROVIDER_NAMES[p]} icons…") as status:
+                n = icons.install(p, progress=lambda m: status.update(m))[p]
+            ui.ok(f"{icons.PROVIDER_NAMES[p]}: {n} icons installed")
+        except (RuntimeError, OSError, ValueError) as e:
+            ui.warn(f"{icons.PROVIDER_NAMES[p]} icons not installed: {e}")
+            if getattr(e, "hint", ""):
+                ui.hint(e.hint)  # type: ignore[attr-defined]
 
 
 def _make_drawer(args: Any, cfg: Any) -> Drawer:

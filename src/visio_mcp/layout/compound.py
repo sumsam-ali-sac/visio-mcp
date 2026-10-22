@@ -219,7 +219,7 @@ class Compound:
         ub, ua, vb, va = insets
         dims = [self._size(it, kids) for it in items]
         b = Block(0.0, 0.0)
-        gap_u, gap_v = NODE_GAP + 0.1, NODE_GAP + 0.1
+        gap_u, gap_v = NODE_GAP + 0.3, NODE_GAP + 0.3  # room for routed edges
         if not kids:
             cols = max(1, math.ceil(math.sqrt(len(items))))
             colw = [max(d[0] for d in dims[c::cols]) for c in range(cols)]

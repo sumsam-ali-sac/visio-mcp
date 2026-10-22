@@ -188,6 +188,23 @@ async def list_masters(stencil: str) -> list[str]:
 
 
 @mcp.tool()
+@_readable
+async def install_icons(provider: str = "all") -> dict[str, Any]:
+    """Download the official cloud architecture icons ('azure', 'aws', 'gcp' or 'all') once, so
+    cloud kinds (azure-*, aws-*, gcp-*) draw with the real service icons. Returns what was
+    installed and the status of every pack. Re-render afterwards to use them."""
+    import asyncio
+
+    from visio_mcp import icons
+
+    try:
+        installed = await asyncio.to_thread(icons.install, None if provider == "all" else provider)
+    except icons.IconInstallError as e:
+        raise ToolError(f"{e}. {e.hint}") from e
+    return {"installed": installed, "status": icons.status()}
+
+
+@mcp.tool()
 def get_authoring_guide() -> str:
     """How to write a great DiagramSpec and run the review loop. Read before the first render."""
     return prompts.GUIDE

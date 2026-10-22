@@ -148,7 +148,7 @@ ICON_NAMES: dict[str, tuple[str, ...]] = {
     "azure-cosmos-db": ("cosmos-db", "cosmosdb"),
     "azure-redis": ("cache-redis", "cache-for-redis", "redis-cache", "redis"),
     "azure-storage-account": ("storage-accounts", "storage-account"),
-    "azure-blob-storage": ("blob-storage", "storage-accounts", "blob-block"),
+    "azure-blob-storage": ("storage-accounts", "blob-storage", "blob-block"),  # the modern storage icon
     "azure-ai-search": ("ai-search", "cognitive-search", "search-services", "search"),
     "azure-machine-learning": ("machine-learning", "machine-learning-studio-workspaces",
                                "machine-learning-service-workspaces"),
@@ -699,7 +699,7 @@ def install(provider: str | None = None, source: str | None = None,
                         entries, label = _entries_from(src, say, tmp)
                         wheel_layout = src == "pypi"
                         picked = _select(entries, p, wheel_layout)
-                        if len(picked) < 15:  # a wrong or partial zip
+                        if len(picked) < (1 if src == "pypi" else 15):  # a wrong or partial vendor zip
                             raise OSError(f"only {len(picked)} icons")
                         say(f"Installing {len(picked)} {PROVIDER_NAMES[p]} icons")
                         results[p] = _write_pack(p, picked, label)

@@ -576,8 +576,10 @@ class _Page:
         iw, ih = _png_size(png)
         k = min(r.w / iw, r.h / ih) if iw and ih else 1.0
         w, h = (iw * k, ih * k) if iw and ih else (r.w, r.h)
-        s = _Shape(self.new_id(), name, type="Foreign")
+        s = _Shape(self.new_id(), name, style=STYLE_TEXT, type="Foreign")
         s.cells += _xform(r.x, r.y, w, h)
+        # transparent PNGs: no fill or line behind the picture (renderers fall back to the style's)
+        s.sections.append(_geometry_xml([Section(_rect().rows, no_fill=True, no_line=True)], w, h))
         s.cells += [_cell("LinePattern", 0), _cell("FillPattern", 0), _cell("ShdwPattern", 0),
                     _cell("ObjType", OBJ_IGNORE),
                     _len("ImgOffsetX", 0.0, "ImgWidth*0"), _len("ImgOffsetY", 0.0, "ImgHeight*0"),

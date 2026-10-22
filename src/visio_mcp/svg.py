@@ -380,7 +380,7 @@ def render_svg(plan: DiagramPlan) -> str:
 
     w, h = _n(c.W), _n(c.H)
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
         f'role="img" aria-labelledby="svg-title svg-desc" text-rendering="geometricPrecision" '
         f'data-theme="{esc(th.name)}">'
         f'<title id="svg-title">{esc(title)}</title><desc id="svg-desc">{esc(desc)}</desc>'
@@ -468,7 +468,7 @@ def _icon_node(c: _Ctx, n: PlannedNode, x0: float, y0: float, x1: float, y1: flo
             f'C{_n(px0 + s * 0.7)} {_n(py0 + s * 0.55)} {_n(px0 + s * 0.88)} {_n(py0 + s * 0.62)} {_n(px0 + s * 0.88)} {_n(py0 + s)}Z"/></g>')
     elif n.image is not None and (uri := _image_uri(n.image)):
         s = min(w, h)
-        out.append(f'<image x="{_n(cx - s / 2)}" y="{_n(y0)}" width="{_n(s)}" height="{_n(s)}" '
+        out.append(f'<image xmlns:xlink="http://www.w3.org/1999/xlink" x="{_n(cx - s / 2)}" y="{_n(y0)}" width="{_n(s)}" height="{_n(s)}" '
                    f'preserveAspectRatio="xMidYMid meet" xlink:href="{uri}"/>')
     else:
         s = min(w, h)

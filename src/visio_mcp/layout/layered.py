@@ -497,7 +497,7 @@ def _side_exits(lg: LayerGraph, sides: dict[tuple[int, str], list[_Attach]]) -> 
         half = me.cw / 2
         outs = [a for a in items if a.outgoing]
         fork = me.decision and len(outs) >= 2
-        main = max(outs, key=lambda a: (lg.chains[a.chain].weight, -abs(a.anchor - me.u))) if fork else None
+        main = min(outs, key=lambda a: (abs(a.anchor - me.u), -lg.chains[a.chain].weight)) if fork else None
         chosen: dict[int, tuple[_Attach, float | None]] = {}
         for a in sorted(items, key=lambda a: abs(a.anchor - me.u)):
             c = lg.chains[a.chain]
@@ -505,7 +505,7 @@ def _side_exits(lg: LayerGraph, sides: dict[tuple[int, str], list[_Attach]]) -> 
             d = a.anchor - me.u
             if fork and a.outgoing and a is not main:
                 sign = (1 if d > 0 else -1) if abs(d) > 1e-6 else (-1 if 1 in chosen else 1)
-                lane = None if abs(d) > half + 0.25 else me.u + sign * (half + 0.3)
+                lane = None if abs(d) > half + 0.1 else me.u + sign * (half + 0.3)
             elif back and abs(d) > half + 0.05:
                 sign, lane = (1 if d > 0 else -1), None
             else:
@@ -515,11 +515,31 @@ def _side_exits(lg: LayerGraph, sides: dict[tuple[int, str], list[_Attach]]) -> 
                 chosen[sign] = (a, lane)
         for sign, (a, lane) in chosen.items():
             c = lg.chains[a.chain]
+            if lane is not None and _pull_dummies(lg, c, a.top, lane):
+                lane = None  # the dummy lane itself now clears the corner
             if a.top:
                 c.side_top, c.side_lane_top = sign, lane
             else:
                 c.side_bottom, c.side_lane_bottom = sign, lane
             items.remove(a)
+
+
+def _pull_dummies(lg: LayerGraph, c: Chain, top: bool, lane: float) -> bool:
+    """Move the dummy run next to a side exit onto its lane, where neighbours leave room."""
+    run = c.verts[1:] if top else c.verts[-2::-1]
+    moved = False
+    for vi in run:
+        v = lg.verts[vi]
+        if not v.dummy:
+            break
+        layer = lg.layers[v.rank]
+        i = layer.index(vi)
+        left = lg.verts[layer[i - 1]] if i else None
+        right = lg.verts[layer[i + 1]] if i + 1 < len(layer) else None
+        if (left and lane < left.u + separation(left, v)) or (right and lane > right.u - separation(v, right)):
+            break
+        v.u, moved = lane, True
+    return moved
 
 
 def _free(lg: LayerGraph, vi: int, sign: int, target: float) -> bool:

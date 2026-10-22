@@ -7,6 +7,7 @@
     visio-ai setup                choose the AI provider
     visio-ai handoff PATH         let Claude Code / Gemini CLI / Codex / Copilot draw it
     visio-ai doctor               check Visio, providers and renderers
+    visio-ai icons [install|remove] official Azure / AWS / Google Cloud icons
     visio-ai themes | kinds | rules TYPE | examples | mcp
 """
 
@@ -73,6 +74,10 @@ def _parser() -> argparse.ArgumentParser:
     h.add_argument("--type", choices=TYPES, default="architecture")
     h.add_argument("--focus", default="")
     sub.add_parser("doctor")
+    ic = sub.add_parser("icons")
+    ic.add_argument("action", nargs="?", choices=["status", "install", "remove"], default="status")
+    ic.add_argument("provider", nargs="?", choices=["azure", "aws", "gcp", "all"], default="all")
+    ic.add_argument("--from", dest="source", help="official icon zip, folder or URL you downloaded")
     sub.add_parser("themes")
     k = sub.add_parser("kinds")
     k.add_argument("--provider", choices=["azure", "aws", "gcp"])
@@ -277,8 +282,42 @@ def _doctor(args: Any) -> int:
     soffice = shutil.which("soffice") or shutil.which("libreoffice")
     rows.append(("PDF without Visio", mark(bool(soffice) or has_visio, "LibreOffice" if soffice else "not available",
                                            "optional: install LibreOffice")))
+    from visio_mcp import icons
+
+    packs = {p: st for p, st in icons.status().items() if st["count"]}
+    rows.append(("Cloud icons", mark(len(packs) == len(icons.PROVIDERS),
+                                     ", ".join(f"{icons.PROVIDER_NAMES[p]} ({st['count']})" for p, st in packs.items())
+                                     or "not installed", "visio-ai icons install")))
     rows.append(("Output folder", str(engine.default_out_dir())))
     ui.console.print(ui.panel(ui.kv_table(rows), title="visio-ai doctor"))
+    return 0
+
+
+def _icons(args: Any) -> int:
+    from visio_mcp import icons
+    from visio_mcp.cli import ui
+
+    provider = None if args.provider == "all" else args.provider
+    if args.action == "install":
+        with ui.spinner("Fetching official cloud icons…") as status:
+            done = icons.install(provider, args.source, progress=lambda m: status.update(Text(m, style="muted")))
+        for p, n in done.items():
+            ui.ok(f"{icons.PROVIDER_NAMES[p]}: {n} icons installed")
+        missing = [p for p in (icons.PROVIDERS if provider is None else (provider,)) if p not in done]
+        for p in missing:
+            ui.warn(f"{icons.PROVIDER_NAMES[p]}: not installed (visio-ai icons install {p} --from PATH)")
+    elif args.action == "remove":
+        gone = icons.remove(provider)
+        ui.ok("Removed " + (", ".join(icons.PROVIDER_NAMES[p] for p in gone) or "nothing (no packs installed)"))
+        return 0
+    t = ui.table("Provider", "Icons", "Source", "Folder")
+    for p, st in icons.status().items():
+        t.add_row(Text(icons.PROVIDER_NAMES[p], style="key"),
+                  Text(str(st["count"]) if st["count"] else "—", style="good" if st["count"] else "warn"),
+                  Text(st["source"] or "not installed", style="muted"), Text(st["path"], style="muted"))
+    ui.console.print(t)
+    if not all(st["count"] for st in icons.status().values()):
+        ui.hint("Install the official icons: visio-ai icons install  (or: --from the vendor zip you downloaded)")
     return 0
 
 
@@ -347,7 +386,7 @@ def _mcp(args: Any) -> int:
 
 COMMANDS = {
     "studio": _studio, "draw": _draw, "render": _render, "scan": _scan, "setup": _setup, "handoff": _handoff,
-    "doctor": _doctor, "themes": _themes, "kinds": _kinds, "rules": _rules, "examples": _examples, "mcp": _mcp,
+    "doctor": _doctor, "icons": _icons, "themes": _themes, "kinds": _kinds, "rules": _rules, "examples": _examples, "mcp": _mcp,
 }
 
 
@@ -364,6 +403,7 @@ def _help() -> int:
         ("visio-ai setup", "Choose the AI: Claude, Gemini, Azure OpenAI, OpenAI or Ollama"),
         ("visio-ai handoff PATH", "Let Claude Code, Gemini CLI, Codex or Copilot CLI draw it via MCP"),
         ("visio-ai doctor", "Check Visio, the AI provider and preview renderers"),
+        ("visio-ai icons [install|remove]", "Official Azure, AWS and Google Cloud icons for cloud diagrams"),
         ("visio-ai themes | kinds | rules TYPE", "Browse themes, shape kinds and diagramming rules"),
         ("visio-ai examples", "Draw the bundled example diagrams"),
         ("visio-ai mcp", "Run the MCP server (for any MCP client)"),

@@ -17,7 +17,8 @@ from typing import Literal
 from visio_mcp.layout.compound import Compound, Placed
 from visio_mcp.layout.manual import manual_positions
 from visio_mcp.layout.model import Frame, LayoutResult, Point, Rect
-from visio_mcp.layout.routing import layered_route, ortho_route, self_loop, straight_route
+from visio_mcp.layout.router import Router
+from visio_mcp.layout.routing import layered_route, ortho_route, self_loop, simplify, straight_route
 from visio_mcp.layout.swimlane import swimlane_layout
 from visio_mcp.layout.tree import is_forest, tree_layout
 from visio_mcp.spec import DiagramSpec
@@ -32,18 +33,19 @@ def compute_layout(
     spec: DiagramSpec, sizes: dict[str, NodeSize], group_styles: dict[str, GroupStyle], layout: str
 ) -> LayoutResult:
     """Place every node and group. layout is a concrete spec Layout (never 'auto')."""
-    if layout == "none":
+    if layout == "none" and any(n.x is not None and n.y is not None for n in spec.nodes):
         return _manual(spec, sizes, group_styles)
     lr = layout.endswith("-lr")
     frame = Frame(lr)
     direction: Direction = "lr" if lr else "tb"
     header: Literal["top", "left"] | None = None
-    if layout.startswith("swimlane"):
+    nested = any(g.parent for g in spec.groups)
+    if layout.startswith("swimlane") and not nested:
         placed = swimlane_layout(spec, sizes, group_styles, frame)
         header = "left" if lr else "top"
     elif layout.startswith("tree") and not spec.groups and is_forest(spec):
         placed = tree_layout(spec, sizes, frame)
-    elif layout.startswith(("flowchart", "tree")):
+    elif layout.startswith(("flowchart", "tree", "swimlane")):  # nested lanes: groups as blocks
         placed = Compound(spec, sizes, group_styles, frame, "layered").run()
     else:
         mode = layout if layout in ("radial", "circular") else "grid"
@@ -57,6 +59,7 @@ def _finish(spec: DiagramSpec, placed: Placed, frame: Frame, direction: Directio
     nodes = {k: frame.rect(*b) for k, b in placed.nodes.items()}
     groups = {k: frame.rect(*b) for k, b in placed.groups.items()}
     routes: dict[int, list[Point]] = {}
+    router: Router | None = None
     for i, e in enumerate(spec.edges):
         a, b = nodes[e.source], nodes[e.target]
         if e.source == e.target:
@@ -64,11 +67,18 @@ def _finish(spec: DiagramSpec, placed: Placed, frame: Frame, direction: Directio
         elif i in placed.paths:
             pts = layered_route(placed.paths[i], placed.nodes[e.source], placed.nodes[e.target], placed.forward[i])
             routes[i] = [frame.point(u, v) for u, v in pts]
-        elif spokes:
-            routes[i] = straight_route(a, b)
         else:
-            routes[i] = ortho_route(a, b)
+            router = router or Router(list(nodes.values()))
+            routes[i] = _free_route(router, a, b, spokes)
     return _normalized(nodes, groups, routes, direction, header)
+
+
+def _free_route(router: Router, a: Rect, b: Rect, spokes: bool) -> list[Point]:
+    """Straight (spokes) or simple orthogonal line; detour around boxes when that one is blocked."""
+    simple = straight_route(a, b) if spokes else ortho_route(a, b)
+    if not router.blocked(simple, (a, b)):
+        return simple
+    return simplify(router.route(a, b) or simple)
 
 
 def _manual(spec: DiagramSpec, sizes: dict[str, NodeSize], styles: dict[str, GroupStyle]) -> LayoutResult:
@@ -84,7 +94,9 @@ def _manual(spec: DiagramSpec, sizes: dict[str, NodeSize], styles: dict[str, Gro
         bottom = min(r.bottom for r in boxes) - va
         top = max(r.top for r in boxes) + vb
         groups[g] = Rect((left + right) / 2, (bottom + top) / 2, right - left, top - bottom)
-    routes = {i: self_loop(nodes[e.source]) if e.source == e.target else ortho_route(nodes[e.source], nodes[e.target])
+    router = Router(list(nodes.values()))
+    routes = {i: self_loop(nodes[e.source]) if e.source == e.target
+              else _free_route(router, nodes[e.source], nodes[e.target], False)
               for i, e in enumerate(spec.edges)}
     return _normalized(nodes, groups, routes, "none", None, keep=True)
 
