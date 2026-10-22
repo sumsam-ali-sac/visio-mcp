@@ -616,16 +616,16 @@ def test_architecture_spec_single_repo(fastapi_repo: Path):
 def test_architecture_spec_cloud_kinds(tf_repo: Path, bicep_repo: Path):
     spec = heuristic_spec([scan(tf_repo)], "cloud")
     assert_valid(spec)
-    kinds = {n.label: n.kind for n in spec.nodes}
+    kinds = [n.kind for n in spec.nodes]
     # provider kinds only when the catalog knows them; otherwise base kinds
     expect_lambda = "aws-lambda" if catalog.lookup("aws-lambda") else "function"
-    assert expect_lambda in kinds.values() or "function" in kinds.values()
+    assert expect_lambda in kinds
     assert any(g.kind == "cloud" and g.label == "AWS" for g in spec.groups)
     assert spec.type == "cloud"
     pairs = {(e.source, e.target) for e in spec.edges}
-    by_label = {n.label: n.id for n in spec.nodes}
-    assert (by_label["orders"], by_label["events"]) in pairs or any(
-        e.target == by_label["events"] for e in spec.edges)
+    events = next(n.id for n in spec.nodes if n.label == "events")
+    lam = next(n.id for n in spec.nodes if n.kind in ("aws-lambda", "function"))
+    assert (lam, events) in pairs
 
     spec = heuristic_spec([scan(bicep_repo)], "architecture")
     assert_valid(spec)

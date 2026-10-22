@@ -1104,7 +1104,7 @@ def _summarize(info: RepoInfo) -> str:
     fw = " + ".join((be[:1] + fe[:1]) if (be and fe) else (info.frameworks[:2]))
     kind = "web app" if fe and not be else ("service" if be else "project")
     parts = [" ".join(p for p in (primary, fw, kind) if p)]
-    data = (info.databases + [m for m in info.messaging if m != "Celery" or True])[:4]
+    data = (info.databases + [m for m in info.messaging if m != "Celery"])[:4]
     summary = parts[0]
     if data:
         summary += " with " + (", ".join(data[:-1]) + " and " + data[-1] if len(data) > 1 else data[0])
