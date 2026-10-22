@@ -7,7 +7,7 @@ import pytest
 from mcp.server.mcpserver.exceptions import ToolError
 
 from fake_visio import FakeVisio
-from visio_mcp.mcp import server
+from visio_mcp.mcp import server, state
 from visio_mcp.output.drawer import Drawer
 
 SPEC = {
@@ -20,7 +20,7 @@ SPEC = {
 @pytest.fixture(autouse=True)
 def fake_server(monkeypatch, tmp_path):
     monkeypatch.setenv("VISIO_MCP_OUT", str(tmp_path))
-    monkeypatch.setattr(server, "_drawer", Drawer(backend=FakeVisio()))
+    monkeypatch.setattr(state, "_drawer", Drawer(backend=FakeVisio()))
     return tmp_path
 
 
@@ -36,7 +36,7 @@ def error(name, args) -> str:
 
 
 def backend() -> FakeVisio:
-    return server._drawer._backend  # type: ignore[union-attr,return-value]
+    return state._drawer._backend  # type: ignore[union-attr,return-value]
 
 
 def test_render_returns_summary_and_preview_image(fake_server):
@@ -115,7 +115,7 @@ def test_rules_themes_kinds_and_lint_tools():
 
 
 def test_native_drawer_without_visio(fake_server, monkeypatch):
-    monkeypatch.setattr(server, "_drawer", Drawer(target="native"))
+    monkeypatch.setattr(state, "_drawer", Drawer(target="native"))
     res = call("render_diagram", {"spec": SPEC, "formats": ["svg"], "preview": False})
     files = json.loads(res.content[0].text)["files"]
     assert files[0].endswith(".vsdx") and any(f.endswith(".svg") for f in files)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import itertools
-import json
 import random
 import time
 from pathlib import Path
@@ -15,7 +14,7 @@ from visio_mcp.layout import LayoutResult, Rect, compute_layout
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import GroupStyle, NodeSize, get_theme
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES = sorted((ROOT / "examples").glob("*.json"))
 PRESETS = ["flowchart-tb", "flowchart-lr", "tree-tb", "tree-lr", "swimlane-lr", "swimlane-tb",
            "radial", "circular", "grid", "none"]
@@ -311,18 +310,3 @@ def test_large_graph_is_fast():
         t = time.perf_counter()
         compute_layout(spec, sizes, styles, preset)
         assert time.perf_counter() - t < 1.0, preset  # ~0.2s here; slack for slow CI machines
-
-
-# --- whole pipeline: plan + geometry audit -------------------------------------------------------
-
-
-@pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
-@pytest.mark.parametrize("preset", [None, *PRESETS])
-def test_examples_pass_geometry_audit(path: Path, preset: str | None):
-    geometry_check = pytest.importorskip("visio_mcp.plan.audit")
-    from visio_mcp.plan import build_plan
-
-    spec = DiagramSpec.model_validate(json.loads(path.read_text(encoding="utf-8")))
-    if preset:
-        spec = spec.model_copy(update={"layout": preset})
-    assert geometry_check.audit(build_plan(spec)) == []

@@ -1,5 +1,4 @@
-"""Hand a repo to the user's own AI coding app (Claude Code, Gemini CLI, Codex, Copilot CLI)
-with the visio MCP server registered, so that app explores the code and draws in Visio."""
+"""Registry of AI coding apps (Claude Code, Gemini CLI, Codex, Copilot CLI): register the MCP server, build the launch."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from visio_mcp.mcp import guide as prompts
+from visio_mcp.mcp import guide
 
 
 def server_command() -> list[str]:
@@ -90,7 +89,7 @@ def installed_tools() -> list[Tool]:
 
 def build_prompt(paths: list[Path], diagram_type: str, focus: str = "") -> str:
     where = paths[0] if len(paths) == 1 else ", ".join(str(p) for p in paths)
-    body = prompts.diagram_prompt(str(where), "repo", diagram_type)
+    body = guide.diagram_prompt(str(where), "repo", diagram_type)
     if focus:
         body += f"\nFocus: {focus}\n"
     return body + "\nUse the visio MCP tools (get_authoring_guide, get_diagram_rules, render_diagram, patch_diagram)."

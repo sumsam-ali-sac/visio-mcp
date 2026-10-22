@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import functools
-import os
-from pathlib import Path
 from typing import Any, Callable, Literal
 
 from mcp.server.mcpserver import Image, MCPServer
@@ -12,9 +10,9 @@ from mcp.server.mcpserver.exceptions import ToolError
 
 from visio_mcp import catalog, lint, rules, style
 from visio_mcp.output.visio import com_thread
-from visio_mcp.output import drawer as engine
-from visio_mcp.mcp import guide as prompts
-from visio_mcp.output.drawer import DrawOutput, Drawer
+from visio_mcp.mcp import guide, state
+from visio_mcp.mcp.state import drawer
+from visio_mcp.output.drawer import DrawOutput, default_out_dir, slug
 from visio_mcp.spec import DiagramSpec, PatchOp
 
 Format = Literal["png", "svg", "pdf", "jpg", "html"]
@@ -28,37 +26,6 @@ mcp = MCPServer(
         "then review the preview, warnings and suggestions and fix them with patch_diagram."
     ),
 )
-
-_drawer: Drawer | None = None  # touched only on the COM thread
-
-
-def _flag(name: str, default: bool) -> bool:
-    v = os.environ.get(name)
-    return default if v is None else v.strip().lower() in ("1", "true", "yes", "on")
-
-
-def drawer() -> Drawer:
-    """Create the Drawer on first use. Must be called on the COM thread.
-
-    VISIO_MCP_TARGET   auto (default) | visio | native
-    VISIO_MCP_LIVE     1 (default): draw in the visible Visio window, shape by shape
-    VISIO_MCP_ATTACH   1: draw into the Visio window the user already has open
-    VISIO_MCP_HEADLESS 1: hidden Visio (CI, servers)
-    """
-    global _drawer
-    if _drawer is None:
-        live = _flag("VISIO_MCP_LIVE", True) and not _flag("VISIO_MCP_HEADLESS", False)
-        _drawer = Drawer(
-            target=os.environ.get("VISIO_MCP_TARGET", "auto"),  # type: ignore[arg-type]
-            live=live,
-            attach=_flag("VISIO_MCP_ATTACH", False),
-            live_delay=float(os.environ.get("VISIO_MCP_LIVE_DELAY", "0.05")),
-        )
-    return _drawer
-
-
-def out_dir() -> Path:
-    return engine.default_out_dir()
 
 
 def _readable(fn: Callable) -> Callable:
@@ -99,7 +66,7 @@ async def render_diagram(
     In Visio it is drawn live in the user's Visio window. Returns a summary (overlaps, warnings,
     rule suggestions, file paths) and a PNG preview to review. `name` sets the file name.
     """
-    vsdx = out_dir() / f"{engine.slug(name or spec.title)}.vsdx"
+    vsdx = default_out_dir() / f"{slug(name or spec.title)}.vsdx"
     out = await com_thread.call(lambda: drawer().render(spec, vsdx, _preview_formats(list(formats), preview)))
     return _reply(out, preview)
 
@@ -210,7 +177,7 @@ async def install_icons(provider: str = "all") -> dict[str, Any]:
 @mcp.tool()
 def get_authoring_guide() -> str:
     """How to write a great DiagramSpec and run the review loop. Read before the first render."""
-    return prompts.GUIDE
+    return guide.GUIDE
 
 
 @mcp.resource("visio://rules/{diagram_type}")
@@ -222,20 +189,14 @@ def rules_resource(diagram_type: str) -> str:
 @mcp.prompt()
 def diagram(subject: str, source: Literal["prompt", "repo"] = "prompt", diagram_type: str = "auto") -> str:
     """Draw a Visio diagram of a subject, from a description or by exploring a repo."""
-    return prompts.diagram_prompt(subject, source, diagram_type)
-
-
-def _shutdown() -> None:
-    if _drawer is not None:
-        _drawer.close()
+    return guide.diagram_prompt(subject, source, diagram_type)
 
 
 def main() -> None:
     try:
         mcp.run()
     finally:
-        # Quit a Visio we started so it doesn't linger holding files open.
-        com_thread._executor.submit(_shutdown).result(timeout=30)
+        com_thread._executor.submit(state.close).result(timeout=30)
 
 
 if __name__ == "__main__":

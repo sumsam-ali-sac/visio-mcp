@@ -1,17 +1,20 @@
-"""Repository scanner: discover repos, profile them, give an AI safe file access, draw a no-AI fallback."""
+"""Repositories as input: discover and profile them, digest them for an AI, give it safe file access, draw a no-AI fallback."""
 
 from __future__ import annotations
 
-from ._common import IGNORE_DIRS
-from .detect import discover, scan
-from .fs import RepoFS, redact
+from .detect import scan
+from .digest import digest, workspace_digest
+from .discover import discover
 from .draft import heuristic_spec
+from .fs import RepoFS, RepoFSError
+from .links import cross_links
 from .model import RepoInfo
-from .digest import cross_links, digest, tree, workspace_digest
+from .redact import redact
+from .tree import tree
 
 __all__ = [
-    "IGNORE_DIRS",
     "RepoFS",
+    "RepoFSError",
     "RepoInfo",
     "cross_links",
     "digest",
