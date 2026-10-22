@@ -1,0 +1,21 @@
+{
+  "title": "Order data model",
+  "layout": "compact",
+  "nodes": [
+    {"id": "customer", "label": "Customer", "kind": "entity"},
+    {"id": "address", "label": "Address", "kind": "entity"},
+    {"id": "order", "label": "Order", "kind": "entity"},
+    {"id": "order_item", "label": "Order item", "kind": "entity"},
+    {"id": "product", "label": "Product", "kind": "entity"},
+    {"id": "category", "label": "Category", "kind": "entity"},
+    {"id": "payment", "label": "Payment", "kind": "entity"}
+  ],
+  "edges": [
+    {"source": "customer", "target": "address", "label": "1 to many", "arrow": "none"},
+    {"source": "customer", "target": "order", "label": "places", "arrow": "none"},
+    {"source": "order", "target": "order_item", "label": "contains", "arrow": "none"},
+    {"source": "order_item", "target": "product", "label": "refers to", "arrow": "none"},
+    {"source": "product", "target": "category", "label": "belongs to", "arrow": "none"},
+    {"source": "order", "target": "payment", "label": "paid by", "arrow": "none"}
+  ]
+}

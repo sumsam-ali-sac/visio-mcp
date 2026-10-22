@@ -1,0 +1,28 @@
+{
+  "title": "CI pipeline",
+  "layout": "flowchart-tb",
+  "nodes": [
+    {"id": "start", "label": "Push to main", "kind": "start"},
+    {"id": "build", "label": "Build", "kind": "process"},
+    {"id": "test", "label": "Run tests", "kind": "process"},
+    {"id": "passed", "label": "Tests pass?", "kind": "decision"},
+    {"id": "fix", "label": "Notify author", "kind": "document"},
+    {"id": "scan", "label": "Security scan", "kind": "process"},
+    {"id": "approved", "label": "Release approved?", "kind": "decision"},
+    {"id": "stage", "label": "Deploy to staging", "kind": "service"},
+    {"id": "prod", "label": "Deploy to production", "kind": "service"},
+    {"id": "done", "label": "Done", "kind": "end"}
+  ],
+  "edges": [
+    {"source": "start", "target": "build"},
+    {"source": "build", "target": "test"},
+    {"source": "test", "target": "passed"},
+    {"source": "passed", "target": "fix", "label": "no"},
+    {"source": "passed", "target": "scan", "label": "yes"},
+    {"source": "scan", "target": "approved"},
+    {"source": "approved", "target": "stage", "label": "yes"},
+    {"source": "approved", "target": "done", "label": "no"},
+    {"source": "stage", "target": "prod"},
+    {"source": "prod", "target": "done"}
+  ]
+}
