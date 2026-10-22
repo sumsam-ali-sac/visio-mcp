@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from visio_mcp.ai.agent import AgentCancelled, AgentError, AgentEvent, DiagramAgent
+from visio_mcp.ai.agent import DiagramAgent
 from visio_mcp.ai.config import (
     CONFIG_PATH,
     DEFAULT_MODELS,
@@ -20,6 +20,7 @@ from visio_mcp.ai.config import (
     save_config,
     suggested_models,
 )
+from visio_mcp.ai.events import AgentCancelled, AgentError, AgentEvent
 from visio_mcp.ai.providers import LLM, LLMError, Reply, Session, ToolCall, ToolDef, make_llm
 
 __all__ = [

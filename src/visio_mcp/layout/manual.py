@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from visio_mcp.layout.model import Rect
+from visio_mcp.layout.compound import Compound
+from visio_mcp.layout.finish import free_route, normalized
+from visio_mcp.layout.model import Frame, LayoutResult, Rect
+from visio_mcp.layout.obstacle_router import ObstacleRouter
+from visio_mcp.layout.polylines import self_loop
 from visio_mcp.spec import DiagramSpec
-from visio_mcp.style import NodeSize
+from visio_mcp.style import GroupStyle, NodeSize
 
 CLEAR = 0.4  # free space kept around every node
 STEP = 0.25
@@ -42,3 +46,23 @@ def manual_positions(spec: DiagramSpec, sizes: dict[str, NodeSize]) -> dict[str,
 def _hits(a: Rect, b: Rect) -> bool:
     return (a.left < b.right + CLEAR and b.left < a.right + CLEAR
             and a.bottom < b.top + CLEAR and b.bottom < a.top + CLEAR)
+
+
+def manual_layout(spec: DiagramSpec, sizes: dict[str, NodeSize], styles: dict[str, GroupStyle]) -> LayoutResult:
+    nodes = manual_positions(spec, sizes)
+    groups: dict[str, Rect] = {}
+    frame = Frame(False)
+    order = Compound(spec, sizes, styles, frame, "grid").h
+    for g in order.depth_first():
+        boxes = [nodes[i] if i in nodes else groups[i] for i in order.children[g]]
+        ub, ua, vb, va = frame.insets(styles[g])
+        left = min(r.left for r in boxes) - ub
+        right = max(r.right for r in boxes) + ua
+        bottom = min(r.bottom for r in boxes) - va
+        top = max(r.top for r in boxes) + vb
+        groups[g] = Rect((left + right) / 2, (bottom + top) / 2, right - left, top - bottom)
+    router = ObstacleRouter(list(nodes.values()))
+    routes = {i: self_loop(nodes[e.source]) if e.source == e.target
+              else free_route(router, nodes[e.source], nodes[e.target], False)
+              for i, e in enumerate(spec.edges)}
+    return normalized(nodes, groups, routes, "none", None, keep=True)

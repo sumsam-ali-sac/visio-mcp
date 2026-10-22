@@ -132,16 +132,6 @@ def resolve_key(cfg: ProviderConfig) -> str | None:
     return None
 
 
-def key_source(cfg: ProviderConfig) -> str:
-    """Where the key comes from, for display ('config', 'env ANTHROPIC_API_KEY', 'missing')."""
-    if cfg.api_key:
-        return "config"
-    for var in ENV_KEYS.get(cfg.provider, ()):
-        if os.environ.get(var):
-            return f"env {var}"
-    return "none needed" if cfg.provider == "ollama" else "missing"
-
-
 def ollama_base() -> str:
     host = os.environ.get("OLLAMA_HOST", "").strip()
     if not host:
@@ -291,9 +281,3 @@ def save_config(cfg: AppConfig, path: Path | str | None = None) -> Path:
     if os.name == "posix":
         os.chmod(p, 0o600)
     return p
-
-
-def remember_path(cfg: AppConfig, path: str, keep: int = 10) -> None:
-    """Move path to the front of recent_paths."""
-    cfg.recent_paths = [path] + [x for x in cfg.recent_paths if x != path]
-    del cfg.recent_paths[keep:]

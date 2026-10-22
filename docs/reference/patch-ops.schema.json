@@ -348,7 +348,6 @@
             "radial",
             "circular",
             "grid",
-            "compact",
             "none"
           ],
           "title": "Layout",
@@ -439,7 +438,6 @@
                 "radial",
                 "circular",
                 "grid",
-                "compact",
                 "none"
               ],
               "type": "string"

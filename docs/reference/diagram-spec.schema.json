@@ -285,7 +285,6 @@
         "radial",
         "circular",
         "grid",
-        "compact",
         "none"
       ],
       "title": "Layout",

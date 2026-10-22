@@ -1,52 +1,50 @@
-"""End-to-end check against real Visio: render every example, patch, inspect, export.
+"""End-to-end check against real Visio: draw every example live, patch, inspect, export.
 
-    uv run python scripts/smoke.py
+    uv run python scripts/smoke.py            # live, in a visible Visio window
+    uv run python scripts/smoke.py --hidden   # hidden Visio, faster
 
-Output goes to diagrams/smoke/.
+Output goes to diagrams/smoke/. Needs Windows with Visio desktop.
 """
 
-import asyncio
 import json
-import os
+import sys
 import time
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
+from visio_mcp.output.drawer import Drawer
+from visio_mcp.spec import DiagramSpec, PatchOp
+
 ROOT = Path(__file__).resolve().parent.parent
-os.environ.setdefault("VISIO_MCP_OUT", str(ROOT / "diagrams" / "smoke"))
-
-from visio_mcp import com_thread, server  # noqa: E402
-from pydantic import TypeAdapter  # noqa: E402
-
-from visio_mcp.spec import DiagramSpec, PatchOp  # noqa: E402
+OUT = ROOT / "diagrams" / "smoke"
 
 
-async def main() -> None:
-    spec = None
-    for f in sorted((ROOT / "examples").glob("*.json")):
-        spec = DiagramSpec.model_validate_json(f.read_text())
-        t = time.time()
-        out = await server.render_diagram(spec, name=f.stem, formats=["png"])
-        r = json.loads(out[0])
-        print(
-            f"{f.stem}: {time.time() - t:.1f}s shapes={r['shapes']} connectors={r['connectors']} "
-            f"overlaps={r['overlaps']} warnings={r['warnings']}"
-        )
+def main() -> None:
+    drawer = Drawer(target="visio", live="--hidden" not in sys.argv)
+    try:
+        for f in sorted((ROOT / "examples").glob("*.json")):
+            spec = DiagramSpec.model_validate_json(f.read_text(encoding="utf-8"))
+            t = time.time()
+            r = drawer.render(spec, OUT / f"{f.stem}.vsdx", ["png"]).result
+            print(f"{f.stem}: {time.time() - t:.1f}s shapes={r.shapes} connectors={r.connectors} "
+                  f"overlaps={r.overlaps} warnings={r.warnings}")
 
-    first = spec.nodes[0].id
-    ops = TypeAdapter(list[PatchOp]).validate_python(
-        [
-            {"op": "update_node", "id": first, "label": "Patched", "fill": "#FFD6D6"},
+        first = spec.nodes[0].id
+        ops = TypeAdapter(list[PatchOp]).validate_python([
+            {"op": "update_node", "id": first, "label": "Patched", "emphasis": True},
             {"op": "remove", "id": "does-not-exist"},
-            {"op": "relayout", "layout": "flowchart-lr"},
-        ]
-    )
-    out = await server.patch_diagram(ops)
-    print("patch:", json.loads(out[0]))
-    found = await server.inspect_diagram()
-    print(f"inspect: {len(found['shapes'])} shapes, {len(found['connectors'])} connectors, overlaps={found['overlaps']}")
-    print("pdf:", await server.export_diagram("pdf"))
-    await com_thread.call(lambda: server.backend().close())
+            {"op": "update_diagram", "theme": "blueprint", "layout": "flowchart-lr"},
+        ])
+        print("patch:", drawer.patch(ops).result.model_dump_json(indent=1))
+        found = drawer.inspect()
+        print(f"inspect: {len(found['shapes'])} shapes, {len(found['connectors'])} connectors, "
+              f"overlaps={found['overlaps']}")
+        print("pdf:", drawer.export("pdf"))
+        print(json.dumps({"ok": True}))
+    finally:
+        drawer.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
