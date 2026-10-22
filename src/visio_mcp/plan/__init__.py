@@ -15,10 +15,10 @@ from pathlib import Path
 from typing import Callable, Literal
 
 from visio_mcp import catalog, icons, lint
-from visio_mcp.backend import TextRun
+from visio_mcp.output.visio.backend import TextRun
 from visio_mcp.catalog import Shape
 from visio_mcp.layout import Point, Rect, compute_layout
-from visio_mcp.spec import DiagramSpec, Group
+from visio_mcp.spec import DiagramSpec, Group, edge_name
 from visio_mcp.style import (
     EdgeStyle,
     GroupStyle,
@@ -247,7 +247,7 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
 
     taken: set[str] = set()
     for i, e in enumerate(spec.edges):
-        name = unique_edge_name(f"{e.source}->{e.target}", taken)
+        name = edge_name(f"{e.source}->{e.target}", taken)
         taken.add(name)
         pts = [(x + ox, y + oy) for x, y in layout.routes.get(i, [])]
         edges.append(PlannedEdge(name, e.source, e.target, e.label, e.style, e.arrow,
@@ -279,15 +279,6 @@ def build_plan(spec: DiagramSpec, has_master: HasMaster | None = None) -> Diagra
         legend_title=legend_title, legend_entries=placed,
         warnings=list(dict.fromkeys(warnings)), suggestions=suggestions, notes=notes,
     )
-
-
-def unique_edge_name(base: str, taken: set[str]) -> str:
-    """'a->b', then 'a->b#2', 'a->b#3' ... for repeated edges."""
-    name, n = base, 1
-    while name in taken:
-        n += 1
-        name = f"{base}#{n}"
-    return name
 
 
 # --- helpers ------------------------------------------------------------------------------
@@ -427,5 +418,5 @@ def _place_legend(frame: Rect, entries: list[LegendEntry], theme: Theme) -> tupl
 # Re-exported for emitters
 __all__ = [
     "DiagramPlan", "PlannedNode", "PlannedGroup", "PlannedEdge", "LegendEntry", "TextBlock",
-    "build_plan", "unique_edge_name", "title_case", "sentence_case",
+    "build_plan", "title_case", "sentence_case",
 ]

@@ -18,8 +18,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal
 
-from visio_mcp import edit, render
-from visio_mcp.backend import VisioBackend
+from visio_mcp.output.visio import draw
+from visio_mcp.output.visio.backend import VisioBackend
+from visio_mcp.output.visio.edit import apply_ops
+from visio_mcp.output.visio.inspect import find_overlaps, inspect
+from visio_mcp.spec.edit import apply_to_spec
 from visio_mcp.plan import DiagramPlan, build_plan
 from visio_mcp.spec import DiagramSpec, PatchOp, RenderResult
 
@@ -115,9 +118,9 @@ class Drawer:
             raise ValueError("no diagram open: call render_diagram or open_diagram first")
         formats = list(formats if formats is not None else self.formats)
         if self.spec is None:
-            result = edit.apply_ops(self.backend(), ops)
+            result = apply_ops(self.backend(), ops)
             return self._save(result, self.vsdx, formats)
-        spec, moves, warnings = edit.apply_to_spec(self.spec, ops)
+        spec, moves, warnings = apply_to_spec(self.spec, ops)
         out = self._draw(spec, self.vsdx, formats, progress, after=moves)
         out.result.warnings[:0] = warnings
         self.spec, self.vsdx = spec, out.vsdx
@@ -132,11 +135,11 @@ class Drawer:
         self.spec, self.vsdx = None, None
         self.backend().open_document(str(p))
         self.vsdx = p
-        return edit.inspect(self.backend())
+        return inspect(self.backend())
 
     def inspect(self) -> dict:
         if self.target == "visio" and self._backend is not None:
-            return edit.inspect(self.backend())
+            return inspect(self.backend())
         if self.spec is None:
             raise ValueError("no diagram open")
         plan = build_plan(self.spec)
@@ -168,7 +171,7 @@ class Drawer:
     def backend(self) -> VisioBackend:
         """The Visio backend, started on first use (Visio target only)."""
         if self._backend is None:
-            from visio_mcp.visio_com import VisioCom
+            from visio_mcp.output.visio.com import VisioCom
 
             self._backend = VisioCom(
                 visible=self.live or self.attach,
@@ -193,9 +196,9 @@ class Drawer:
         say("Planning layout")
         backend = self.backend()
         plan = build_plan(spec, backend.has_master)
-        result = render.emit_visio(backend, plan, say)
+        result = draw.emit_visio(backend, plan, say)
         if after:
-            result = result.model_copy(update={"warnings": result.warnings + (edit.apply_ops(backend, after).warnings)})
+            result = result.model_copy(update={"warnings": result.warnings + (apply_ops(backend, after).warnings)})
         say("Saving")
         out = self._save(result, vsdx, formats)
         out.plan = plan
@@ -230,7 +233,7 @@ def _free_name(p: Path) -> Path:
 
 
 def _draw_native(spec: DiagramSpec, vsdx: Path, formats: list[str], progress: Progress | None) -> DrawOutput:
-    from visio_mcp.vsdx_writer import write_vsdx
+    from visio_mcp.output.vsdx import write_vsdx
 
     say = progress or (lambda _m: None)
     say("Planning layout")
@@ -259,7 +262,7 @@ def _draw_native(spec: DiagramSpec, vsdx: Path, formats: list[str], progress: Pr
 
 
 def _native_previews(plan: DiagramPlan, base: Path, formats: list[str]) -> dict[str, Path]:
-    from visio_mcp import svg
+    from visio_mcp.output import svg
 
     out: dict[str, Path] = {}
     wanted = set(formats)
@@ -298,8 +301,8 @@ def _soffice_convert(vsdx: Path, fmt: str) -> Path | None:
 
 
 def _plan_overlaps(plan: DiagramPlan) -> list[tuple[str, str]]:
-    from visio_mcp.backend import ShapeInfo
+    from visio_mcp.output.visio.backend import ShapeInfo
 
-    return render.find_overlaps([
+    return find_overlaps([
         ShapeInfo(n.id, n.label, None, n.rect.x, n.rect.y, n.rect.w, n.rect.h) for n in plan.nodes
     ])

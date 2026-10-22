@@ -11,9 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp import catalog, icons, svg, vsdx_writer
+from visio_mcp import catalog, icons
+from visio_mcp.output import svg
+from visio_mcp.output import vsdx as vsdx_writer
 from visio_mcp.plan import build_plan
-from visio_mcp.render import render_spec
+from visio_mcp.output.visio.draw import render_spec
 from visio_mcp.spec import DiagramSpec
 
 WHEEL = Path(os.environ.get(
@@ -324,7 +326,7 @@ def test_render_falls_back_when_import_fails(fake, tmp_path, monkeypatch):
 
 
 def test_cli_icons_status_and_install(tmp_path, capsys):
-    from visio_mcp.cli import main
+    from visio_mcp.cli.main import main
 
     src = make_zip(tmp_path / "d.whl", DIAGRAMS_NAMES)
     assert main(["icons"]) == 0
@@ -337,7 +339,7 @@ def test_cli_icons_status_and_install(tmp_path, capsys):
 def test_server_install_icons(tmp_path, monkeypatch):
     import asyncio
 
-    from visio_mcp import server
+    from visio_mcp.mcp import server
 
     src = make_zip(tmp_path / "d.whl", DIAGRAMS_NAMES)
     real = icons.install

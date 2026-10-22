@@ -147,7 +147,7 @@ class DiagramAgent:
         self.provider_hint = provider_hint if provider_hint is not None else _cloud_hint(self.repos)
         self.on_event = on_event
         self.max_steps = max_steps
-        self.fs = fs if fs is not None else _mod("scanner").RepoFS([Path(r.path) for r in self.repos])
+        self.fs = fs if fs is not None else _mod("repo").RepoFS([Path(r.path) for r in self.repos])
         self.spec: DiagramSpec | None = None  # last accepted spec
         self.usage: dict[str, int] = {}
         self._session: Session | None = None
@@ -438,7 +438,7 @@ class DiagramAgent:
 
     def _digest(self) -> str:
         try:
-            scanner = _mod("scanner")
+            scanner = _mod("repo")
             if len(self.repos) == 1:
                 return scanner.digest(self.repos[0])
             return scanner.workspace_digest(self.repos)

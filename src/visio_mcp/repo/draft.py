@@ -11,9 +11,9 @@ from visio_mcp.spec import DiagramSpec, Edge, Group, Node
 
 from ._common import short
 from .detect import _BACKEND, _CLOUD_PRETTY, _FRONTEND, _NON_PRIMARY, image_family
-from .heuristic_tables import PROVIDER_LABEL, RES_TABLE, SHADOWS, lookup_resource, resource_family, resource_key
+from .draft_tables import PROVIDER_LABEL, RES_TABLE, SHADOWS, lookup_resource, resource_family, resource_key
 from .model import RepoInfo
-from .render import cross_links
+from .digest import cross_links
 
 _SERVERLESS = {"Azure Functions", ".NET Azure Functions", "AWS Lambda"}
 _CAT_LABEL = {"database": "queries", "cache": "caches", "queue": "messages", "storage": "files"}

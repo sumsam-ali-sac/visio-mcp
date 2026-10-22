@@ -7,8 +7,8 @@ import pytest
 from mcp.server.mcpserver.exceptions import ToolError
 
 from fake_visio import FakeVisio
-from visio_mcp import server
-from visio_mcp.engine import Drawer
+from visio_mcp.mcp import server
+from visio_mcp.output.drawer import Drawer
 
 SPEC = {
     "title": "Hello World",

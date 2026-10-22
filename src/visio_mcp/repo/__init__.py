@@ -5,9 +5,9 @@ from __future__ import annotations
 from ._common import IGNORE_DIRS
 from .detect import discover, scan
 from .fs import RepoFS, redact
-from .heuristic import heuristic_spec
+from .draft import heuristic_spec
 from .model import RepoInfo
-from .render import cross_links, digest, tree, workspace_digest
+from .digest import cross_links, digest, tree, workspace_digest
 
 __all__ = [
     "IGNORE_DIRS",

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp import cli
+from visio_mcp.cli.main import main as cli_main
 from visio_mcp.cli import handoff
 
 
@@ -18,7 +18,7 @@ def wide_console(monkeypatch, tmp_path):
 
 
 def run(capsys, *argv: str) -> tuple[int, str]:
-    code = cli.main(list(argv))
+    code = cli_main(list(argv))
     return code, capsys.readouterr().out
 
 
@@ -74,7 +74,7 @@ def home(monkeypatch, tmp_path):
 def test_server_command_falls_back_to_module(monkeypatch):
     monkeypatch.setattr(handoff.shutil, "which", lambda name: None)
     cmd = handoff.server_command()
-    assert cmd[1:] == ["-m", "visio_mcp.server"]
+    assert cmd[1:] == ["-m", "visio_mcp.mcp"]
 
 
 def test_gemini_register_merges_settings(home):
@@ -89,10 +89,10 @@ def test_gemini_register_merges_settings(home):
 
 
 def test_copilot_register(home):
-    handoff._copilot_register(["py", "-m", "visio_mcp.server"])
+    handoff._copilot_register(["py", "-m", "visio_mcp.mcp"])
     data = json.loads((home / ".copilot" / "mcp-config.json").read_text())
     assert data["mcpServers"]["visio"] == {
-        "type": "local", "command": "py", "args": ["-m", "visio_mcp.server"], "tools": ["*"],
+        "type": "local", "command": "py", "args": ["-m", "visio_mcp.mcp"], "tools": ["*"],
     }
 
 

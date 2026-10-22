@@ -324,7 +324,7 @@ def test_large_graph_is_fast():
 @pytest.mark.parametrize("path", EXAMPLES, ids=lambda p: p.stem)
 @pytest.mark.parametrize("preset", [None, *PRESETS])
 def test_examples_pass_geometry_audit(path: Path, preset: str | None):
-    geometry_check = pytest.importorskip("visio_mcp.geometry_check")
+    geometry_check = pytest.importorskip("visio_mcp.plan.audit")
     from visio_mcp.plan import build_plan
 
     spec = DiagramSpec.model_validate(json.loads(path.read_text(encoding="utf-8")))

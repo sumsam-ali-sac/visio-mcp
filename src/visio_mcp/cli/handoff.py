@@ -11,13 +11,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from visio_mcp import prompts
+from visio_mcp.mcp import guide as prompts
 
 
 def server_command() -> list[str]:
     """How an MCP client starts this server: the installed script, else this Python."""
     exe = shutil.which("visio-mcp")
-    return [exe] if exe else [sys.executable, "-m", "visio_mcp.server"]
+    return [exe] if exe else [sys.executable, "-m", "visio_mcp.mcp"]
 
 
 @dataclass(frozen=True)

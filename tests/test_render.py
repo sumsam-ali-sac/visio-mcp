@@ -5,9 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp.backend import ShapeInfo
+from visio_mcp.output.visio.backend import ShapeInfo
 from visio_mcp.plan import build_plan
-from visio_mcp.render import find_overlaps, render_spec
+from visio_mcp.output.visio.draw import render_spec
+from visio_mcp.output.visio.inspect import find_overlaps
 from visio_mcp.spec import DiagramSpec, Edge, Group, Node
 
 ROOT = Path(__file__).resolve().parents[1]

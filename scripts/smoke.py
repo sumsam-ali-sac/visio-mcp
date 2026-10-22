@@ -14,7 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 os.environ.setdefault("VISIO_MCP_OUT", str(ROOT / "diagrams" / "smoke"))
 
-from visio_mcp import com_thread, server  # noqa: E402
+from visio_mcp.output.visio import com_thread# noqa: E402
+from visio_mcp.mcp import server
 from pydantic import TypeAdapter  # noqa: E402
 
 from visio_mcp.spec import DiagramSpec, PatchOp  # noqa: E402

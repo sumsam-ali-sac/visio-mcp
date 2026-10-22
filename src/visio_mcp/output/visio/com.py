@@ -22,7 +22,7 @@ import pythoncom
 import pywintypes
 import win32com.client
 
-from visio_mcp.backend import Align, ArrowMode, LinePattern, ShapeInfo, TextRun
+from visio_mcp.output.visio.backend import Align, ArrowMode, LinePattern, ShapeInfo, TextRun
 from visio_mcp.style import EdgeStyle, GroupStyle, ShapeStyle, TextStyle
 
 # Visio constants, verified on Visio 16 (names from the Visio type library).
@@ -187,7 +187,7 @@ def _put_char_prop(chars: Any, index: int, value: int) -> None:
 
 
 class VisioCom:
-    """Implements visio_mcp.backend.VisioBackend. Create and use only on the COM thread."""
+    """Implements visio_mcp.output.visio.backend.VisioBackend. Create and use only on the COM thread."""
 
     @_guard
     def __init__(self, visible: bool = True, live_delay: float = 0.0, attach: bool = False) -> None:

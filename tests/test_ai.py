@@ -57,8 +57,8 @@ class FakeFS:
 
 @pytest.fixture
 def fakes(monkeypatch):
-    """Stub visio_mcp.scanner / rules / lint so the agent is tested in isolation."""
-    scanner = types.ModuleType("visio_mcp.scanner")
+    """Stub visio_mcp.repo / rules / lint so the agent is tested in isolation."""
+    scanner = types.ModuleType("visio_mcp.repo")
     scanner.RepoFS = lambda roots: FakeFS()  # type: ignore[attr-defined]
     scanner.digest = lambda info, max_chars=12000: f"DIGEST {info.name}"  # type: ignore[attr-defined]
     scanner.workspace_digest = lambda repos, max_chars=20000: "WS " + ",".join(r.name for r in repos)  # type: ignore[attr-defined]
@@ -70,7 +70,7 @@ def fakes(monkeypatch):
     state: dict[str, Any] = {"findings": lambda spec: []}
     lint.normalize = lambda spec: (spec.model_copy(update={"theme": "pro"}) if spec.theme == "auto" else spec, ["n1"])  # type: ignore[attr-defined]
     lint.lint = lambda spec: state["findings"](spec)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "visio_mcp.scanner", scanner)
+    monkeypatch.setitem(sys.modules, "visio_mcp.repo", scanner)
     monkeypatch.setitem(sys.modules, "visio_mcp.rules", rules)
     monkeypatch.setitem(sys.modules, "visio_mcp.lint", lint)
     return state

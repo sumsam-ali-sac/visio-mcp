@@ -143,6 +143,15 @@ class DiagramSpec(BaseModel):
         return self
 
 
+def edge_name(base: str, taken: set[str]) -> str:
+    """Shape name of an edge: 'a->b', then 'a->b#2', 'a->b#3' ... for repeated edges."""
+    name, n = base, 1
+    while name in taken:
+        n += 1
+        name = f"{base}#{n}"
+    return name
+
+
 # Patch operations: small edits to the open diagram, addressed by node/group id.
 
 

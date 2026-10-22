@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 from ._common import GitIgnore, is_ignored_dir
-from .render import TreeNode, build_tree, render_tree
+from .digest import TreeNode, build_tree, render_tree
 
 MASK = "***REDACTED***"
 

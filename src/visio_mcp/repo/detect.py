@@ -987,7 +987,7 @@ def scan(path: str | Path) -> RepoInfo:
             target = getattr(info, _FAMILY_LISTS.get(fam[1], "databases"))
             _add(target, fam[0])
     # IaC resources contribute too
-    from .heuristic_tables import resource_family  # local import: avoid cycle at module load
+    from .draft_tables import resource_family  # local import: avoid cycle at module load
 
     for r in info.resources:
         fam = resource_family(r)

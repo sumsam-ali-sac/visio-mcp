@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp import prompts
+from visio_mcp.mcp import guide as prompts
 from visio_mcp.spec import DiagramSpec
 
 ROOT = Path(__file__).resolve().parents[1]

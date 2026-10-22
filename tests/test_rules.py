@@ -125,4 +125,4 @@ def test_wheel_includes_rules(tmp_path):
     names = set(zipfile.ZipFile(wheel).namelist())
     for name in EXPECTED_FILES:
         assert f"visio_mcp/rules/{name}.md" in names
-    assert "visio_mcp/rules.py" in names
+    assert "visio_mcp/rules/__init__.py" in names

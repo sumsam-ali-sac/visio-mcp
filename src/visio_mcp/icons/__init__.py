@@ -743,7 +743,7 @@ def _png_target(svg: Path) -> Path:
 def _raster_playwright(jobs: list[tuple[Path, Path]]) -> None:
     from playwright.sync_api import sync_playwright  # type: ignore[import-not-found]
 
-    from visio_mcp.svg import _find_chromium
+    from visio_mcp.output.svg import _find_chromium
 
     args = ["--no-sandbox", "--disable-gpu"]
     with sync_playwright() as pw:

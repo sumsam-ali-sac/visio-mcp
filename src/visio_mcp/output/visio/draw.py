@@ -5,15 +5,13 @@ from __future__ import annotations
 from typing import Callable
 
 from visio_mcp import catalog
-from visio_mcp.backend import ShapeInfo, TextRun, VisioBackend
-from visio_mcp.plan import DiagramPlan, PlannedNode, build_plan, unique_edge_name
-from visio_mcp.spec import DiagramSpec, Node, RenderResult
-from visio_mcp.style import PROFESSIONAL, EdgeStyle, ShapeStyle, replace
+from visio_mcp.output.visio.backend import TextRun, VisioBackend
+from visio_mcp.output.visio.inspect import find_overlaps
+from visio_mcp.plan import DiagramPlan, PlannedNode, build_plan
+from visio_mcp.spec import DiagramSpec, RenderResult
+from visio_mcp.style import EdgeStyle, ShapeStyle, replace
 
-EPS = 1e-6
 Progress = Callable[[str], None]
-
-__all__ = ["render_spec", "emit_visio", "draw_node", "find_overlaps", "unique_edge_name"]
 
 
 def render_spec(backend: VisioBackend, spec: DiagramSpec, progress: Progress | None = None) -> RenderResult:
@@ -58,34 +56,6 @@ def emit_visio(backend: VisioBackend, plan: DiagramPlan, progress: Progress | No
         suggestions=plan.suggestions,
         overlaps=find_overlaps(backend.shapes()),
     )
-
-
-def draw_node(backend: VisioBackend, node: Node, x: float, y: float) -> list[str]:
-    """Drop one node at (x, y) with the default theme (patching a diagram opened from disk)."""
-    resolved = catalog.resolve(node.kind, backend.has_master)
-    backend.drop_shape(node.id, resolved.shape.stencil, resolved.shape.master, x, y)
-    category = resolved.kind.category if resolved.kind else "generic"
-    style = PROFESSIONAL.node_style(category)
-    if node.fill:
-        style = replace(style, fill=node.fill)
-    backend.style_shape(node.id, style, keep_fill=resolved.icon, label_below=resolved.icon)
-    backend.set_text(node.id, node.label or node.id)
-    return [resolved.warning] if resolved.warning else []
-
-
-def find_overlaps(shapes: list[ShapeInfo]) -> list[tuple[str, str]]:
-    """Pairs of node shapes whose boxes intersect (connectors, containers, decorations ignored)."""
-    boxes = [s for s in shapes if not (s.is_connector or s.is_container or s.name.startswith("__"))]
-    pairs: list[tuple[str, str]] = []
-    for i, a in enumerate(boxes):
-        for b in boxes[i + 1 :]:
-            dx = abs(a.x - b.x) - (a.width + b.width) / 2
-            dy = abs(a.y - b.y) - (a.height + b.height) / 2
-            if dx < -EPS and dy < -EPS:
-                pair = tuple(sorted((a.name, b.name)))
-                if pair not in pairs:
-                    pairs.append(pair)  # type: ignore[arg-type]
-    return pairs
 
 
 def _draw_planned(backend: VisioBackend, n: PlannedNode) -> None:

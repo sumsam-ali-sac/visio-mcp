@@ -17,10 +17,11 @@ from rich.syntax import Syntax
 from rich.text import Text
 from rich.tree import Tree
 
-from visio_mcp import engine, lint, style
+from visio_mcp import lint, style
+from visio_mcp.output import drawer as engine
 from visio_mcp.cli import ui
 from visio_mcp.cli.ui import console
-from visio_mcp.engine import DrawOutput, Drawer
+from visio_mcp.output.drawer import DrawOutput, Drawer
 from visio_mcp.spec import DiagramSpec
 
 TYPE_INFO = {  # fallback when rules.type_summary() is unavailable
@@ -70,7 +71,7 @@ class Session:
 
 
 def scan_paths(raw: str) -> list[Any]:
-    from visio_mcp import scanner
+    from visio_mcp import repo as scanner
 
     with ui.spinner("Scanning for repositories…"):
         t0 = time.perf_counter()
@@ -407,7 +408,7 @@ def _ask_engine(cfg: Any) -> str:
 
 def _explore(how: str, cfg: Any, s: Session) -> DiagramSpec | None:
     if how == "offline":
-        from visio_mcp import scanner
+        from visio_mcp import repo as scanner
 
         with ui.spinner("Drafting from the static scan…"):
             spec = scanner.heuristic_spec(s.repos, s.diagram_type)

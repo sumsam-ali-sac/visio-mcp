@@ -15,7 +15,7 @@ from visio_mcp.layout import Rect
 from visio_mcp.plan import DiagramPlan, build_plan
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import GEOMETRY_MIN, ICON_SIZE
-from visio_mcp.vsdx_writer import write_vsdx
+from visio_mcp.output.vsdx import write_vsdx
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 V = "{http://schemas.microsoft.com/office/visio/2012/main}"

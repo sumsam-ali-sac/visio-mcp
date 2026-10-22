@@ -11,9 +11,9 @@ pythoncom = pytest.importorskip("pythoncom")
 import pywintypes  # noqa: E402
 import win32com.client  # noqa: E402
 
-from visio_mcp.backend import TextRun  # noqa: E402
+from visio_mcp.output.visio.backend import TextRun  # noqa: E402
 from visio_mcp.style import PROFESSIONAL, EdgeStyle, ShapeStyle, TextStyle  # noqa: E402
-from visio_mcp.visio_com import BACKGROUND, VisioCom  # noqa: E402
+from visio_mcp.output.visio.com import BACKGROUND, VisioCom  # noqa: E402
 
 pytestmark = pytest.mark.visio
 

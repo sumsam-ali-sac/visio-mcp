@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from visio_mcp import svg as svgmod
+from visio_mcp.output import svg as svgmod
 from visio_mcp.plan import build_plan
 from visio_mcp.spec import DiagramSpec
 

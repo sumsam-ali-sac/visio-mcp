@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from visio_mcp import catalog
-from visio_mcp.scanner import (
+from visio_mcp.repo import (
     RepoFS,
     RepoInfo,
     digest,

@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Iterable, Literal
 from xml.sax.saxutils import escape, quoteattr
 
-from visio_mcp.backend import TextRun
+from visio_mcp.output.visio.backend import TextRun
 from visio_mcp.layout import Rect
 from visio_mcp.plan import DiagramPlan, LegendEntry, PlannedEdge, PlannedGroup, PlannedNode, TextBlock
 from visio_mcp.style import ShapeStyle, TextStyle, replace, text_width

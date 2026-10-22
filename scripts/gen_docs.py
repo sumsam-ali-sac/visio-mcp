@@ -100,7 +100,7 @@ def diagram_types() -> None:
 
 
 def gallery() -> None:
-    from visio_mcp.engine import Drawer
+    from visio_mcp.output.drawer import Drawer
 
     out = ROOT / "docs" / "gallery"
     out.mkdir(parents=True, exist_ok=True)

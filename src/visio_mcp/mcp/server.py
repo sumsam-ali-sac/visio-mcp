@@ -10,8 +10,11 @@ from typing import Any, Callable, Literal
 from mcp.server.mcpserver import Image, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from visio_mcp import catalog, com_thread, engine, lint, prompts, rules, style
-from visio_mcp.engine import DrawOutput, Drawer
+from visio_mcp import catalog, lint, rules, style
+from visio_mcp.output.visio import com_thread
+from visio_mcp.output import drawer as engine
+from visio_mcp.mcp import guide as prompts
+from visio_mcp.output.drawer import DrawOutput, Drawer
 from visio_mcp.spec import DiagramSpec, PatchOp
 
 Format = Literal["png", "svg", "pdf", "jpg", "html"]

@@ -2,8 +2,9 @@ import pytest
 
 from visio_mcp import catalog
 from visio_mcp.catalog import Resolved, Shape
-from visio_mcp.edit import apply_ops, inspect
-from visio_mcp.render import render_spec
+from visio_mcp.output.visio.edit import apply_ops
+from visio_mcp.output.visio.inspect import inspect
+from visio_mcp.output.visio.draw import render_spec
 from visio_mcp.spec import (
     AddEdge,
     AddNode,
@@ -52,9 +53,9 @@ def test_move(drawn):
     assert (drawn.items["a"].x, drawn.items["a"].y) == (9, 8)
 
 
-def test_relayout(drawn):
-    apply_ops(drawn, [Relayout(layout="tree-tb")])
-    assert drawn.layouts[-1] == "tree-tb"
+def test_relayout_needs_a_spec(drawn):
+    result = apply_ops(drawn, [Relayout(layout="tree-tb")])
+    assert "drawn from a spec" in result.warnings[0]
 
 
 def test_remove_node_drops_its_edges(drawn):

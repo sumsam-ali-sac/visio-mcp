@@ -16,7 +16,7 @@ from ._common import (
     resolve_dir,
 )
 from .detect import _CLOUD_PRETTY, _IAC_PRETTY
-from .heuristic_tables import lookup_resource
+from .draft_tables import lookup_resource
 from .model import RepoInfo
 
 MAX_FILES_SHOWN = 12
