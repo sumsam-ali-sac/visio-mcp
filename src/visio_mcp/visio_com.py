@@ -81,6 +81,8 @@ class VisioCom:
     def __init__(self, visible: bool = False) -> None:
         self._app = _start_app(visible)
         self._app.AlertResponse = ALERT_NO
+        # Some masters (org chart) run add-ons on drop, which hang a headless Visio.
+        self._app.EventsEnabled = False
         self._doc: Any = None
         self._stencils: dict[str, Any] = {}
         self._app.Settings.SetRasterExportResolution(3, 150.0, 150.0, 0)  # custom, 150 dpi
@@ -90,6 +92,7 @@ class VisioCom:
         """Quit Visio without saving anything."""
         try:
             self._close_doc()
+            self._app.EventsEnabled = True
             self._app.Quit()
         except pywintypes.com_error:
             pass

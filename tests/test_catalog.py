@@ -37,6 +37,12 @@ def test_first_available_candidate_wins():
     assert r.warning is None
 
 
+def test_icon_stencils_keep_their_own_colors():
+    r = catalog.resolve("firewall", _all)
+    assert r.shape.stencil not in catalog._FILLABLE
+    assert r.fill is None
+
+
 def test_skips_unavailable_candidates():
     k = catalog.kinds()["database"]
     second = k.candidates[1]

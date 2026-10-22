@@ -15,7 +15,8 @@ Never place shapes by coordinates; the server lays it out and draws it in Visio.
 - flowchart-lr: architecture and data flow, left to right (clients -> services -> data).
 - tree-tb: hierarchies, org charts, containment (root on top). tree-lr: same, root on the left.
 - radial: one hub with spokes (a gateway or core service and its clients).
-- compact: big flat sets where order matters little (ERDs, inventories).
+- ERDs: flowchart-lr (or tree-tb when one table owns the rest).
+- compact: an indented tree, top-left root; rarely the best choice.
 - circular / none: rare. "none" keeps your own x/y values.
 
 ## 2. Size it
@@ -27,6 +28,8 @@ Never place shapes by coordinates; the server lays it out and draws it in Visio.
 - Ids: short, unique, no spaces (api, orders_db). Labels: at most 4 words.
 - kind: a semantic kind from list_kinds (service, database, queue, user, decision, ...).
   Call list_kinds when unsure. Do not guess shape names.
+- Flowcharts use flowchart kinds (start, process, decision, document, end) for every step,
+  even steps like "Deploy"; architecture and network kinds draw large icons.
 - groups: tiers (Presentation, Services, Data), trust boundaries (Internet, VPC), or
   environments. A node sits in at most one group via its "group" field.
 - edges: arrows from source to target between nodes only. Add a label only when it adds

@@ -47,6 +47,9 @@ _PEOPLE = "PEOPLE_U.VSSX"
 _AZ_ENT = "AZUREENTERPRISE_U.VSSX"
 _AZ_GEN = "AZUREGENERAL_U.VSSX"
 
+# Plain geometric stencils take the kind's fill; icon stencils keep their own colors.
+_FILLABLE = {_BASFLO, _BASIC, _ORGCH, "DBCHEN_U.VSSX", "WEBSIT_U.VSSX", "ANNOT_U.VSSX"}
+
 
 def _k(name: str, description: str, fill: str | None, *shapes: tuple[str, str]) -> Kind:
     return Kind(name, description, tuple(Shape(s, m) for s, m in shapes), fill)
@@ -102,7 +105,8 @@ _KINDS: tuple[Kind, ...] = (
     _k("manager", "A manager in an org chart.", _ORG, (_ORGCH, "Manager")),
     _k("position", "An employee or position in an org chart.", _ORG, (_ORGCH, "Position")),
     # ERD
-    _k("entity", "A database entity (table) in an ER diagram.", _ERD, ("DBCROW_U.VSSX", "Entity"), ("DBCHEN_U.VSSX", "Entity")),
+    # Chen entity is one shape; the Crow's Foot entity spawns attribute-row shapes that layout scatters.
+    _k("entity", "A database entity (table) in an ER diagram.", _ERD, ("DBCHEN_U.VSSX", "Entity")),
     # generic
     _k("box", "A plain rectangle.", None, (_BASIC, "Rectangle")),
     _k("ellipse", "A plain ellipse.", None, (_BASIC, "Ellipse")),
@@ -153,5 +157,5 @@ def resolve(kind: str, has_master: Callable[[str, str], bool]) -> Resolved:
         return Resolved(FALLBACK, None, f"unknown kind '{kind}', drew a rectangle (see list_kinds)")
     for shape in k.candidates:
         if has_master(shape.stencil, shape.master):
-            return Resolved(shape, k.fill, None)
+            return Resolved(shape, k.fill if shape.stencil in _FILLABLE else None, None)
     return Resolved(FALLBACK, k.fill, f"no stencil master available for kind '{kind}', drew a rectangle")

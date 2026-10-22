@@ -76,6 +76,13 @@ def test_drop_text_fill_and_shapes(v):
     assert v._find("b").CellsU("FillForegnd").FormulaU.replace(" ", "") == "RGB(255,128,0)"
 
 
+def test_org_chart_master_drop_does_not_hang(v):
+    # ORGCH masters run an add-on from EventDrop; with events enabled this blocks headless Visio.
+    v.drop_shape("ceo", "ORGCH_U.VSSX", "Executive", 2.0, 2.0)
+    v.set_text("ceo", "CEO")
+    assert by_name(v)["ceo"].master == "Executive"
+
+
 def test_missing_names_raise_keyerror(v):
     with pytest.raises(KeyError):
         v.set_text("ghost", "x")

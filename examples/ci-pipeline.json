@@ -9,8 +9,8 @@
     {"id": "fix", "label": "Notify author", "kind": "document"},
     {"id": "scan", "label": "Security scan", "kind": "process"},
     {"id": "approved", "label": "Release approved?", "kind": "decision"},
-    {"id": "stage", "label": "Deploy to staging", "kind": "service"},
-    {"id": "prod", "label": "Deploy to production", "kind": "service"},
+    {"id": "stage", "label": "Deploy to staging", "kind": "process"},
+    {"id": "prod", "label": "Deploy to production", "kind": "process"},
     {"id": "done", "label": "Done", "kind": "end"}
   ],
   "edges": [

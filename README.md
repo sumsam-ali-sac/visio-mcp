@@ -129,7 +129,7 @@ Ids must not clash between nodes and groups. Edges must reference existing nodes
 | `tree-tb` / `tree-lr` | Hierarchies, org charts |
 | `radial` | Hub and spokes |
 | `circular` | Rings |
-| `compact` | Dense sets, ERDs |
+| `compact` | Indented tree, root top-left |
 | `none` | Keep your own `x`/`y` |
 
 ### Patch operations

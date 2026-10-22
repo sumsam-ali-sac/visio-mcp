@@ -1,6 +1,6 @@
 {
   "title": "Order data model",
-  "layout": "compact",
+  "layout": "flowchart-lr",
   "nodes": [
     {"id": "customer", "label": "Customer", "kind": "entity"},
     {"id": "address", "label": "Address", "kind": "entity"},
