@@ -70,12 +70,7 @@ def _prepare(spec: DiagramSpec) -> tuple[DiagramSpec, dict[str, NodeSize], dict[
         w = 1.4 + 0.1 * (len(n.label) % 6)
         h = 1.0 if n.kind == "decision" else 0.75 + 0.1 * (len(n.id) % 3)
         sizes[n.id] = NodeSize(w, h, w, h)
-    parents = {g.id: g.parent for g in spec.groups}
-
-    def depth(g: str | None) -> int:
-        return 0 if not parents.get(g) else 1 + depth(parents[g])
-
-    styles = {g.id: theme.group_style(g.kind, depth(g.id)) for g in spec.groups}
+    styles = {g.id: theme.group_style(g.kind) for g in spec.groups}
     return spec, sizes, styles
 
 

@@ -5,7 +5,7 @@ import pytest
 from visio_mcp.mcp import guide as prompts
 from visio_mcp.spec import DiagramSpec
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES = sorted((ROOT / "examples").glob("*.json"))
 
 

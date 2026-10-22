@@ -50,7 +50,7 @@ def kinds() -> None:
                      "| Kind | Category | Falls back to | Service |\n|---|---|---|---|\n")
         for k in sorted((k for k in catalog.kinds().values() if k.provider == provider), key=lambda k: k.name):
             lines.append(f"| `{k.name}` | {k.category} | `{k.base}` | {k.description} |\n")
-    aliases = getattr(catalog, "_ALIASES", {})
+    aliases = getattr(catalog, "ALIASES", {})
     if aliases:
         lines.append("\n## Aliases\n\n| Alias | Kind |\n|---|---|\n")
         lines += [f"| `{a}` | `{k}` |\n" for a, k in sorted(aliases.items())]

@@ -7,7 +7,7 @@ warnings instead of reaching the user's Visio page.
 from __future__ import annotations
 
 from visio_mcp.layout import Rect
-from visio_mcp.plan import DiagramPlan
+from visio_mcp.plan.model import DiagramPlan
 
 EPS = 0.01  # inches; touching is fine, overlapping is not
 

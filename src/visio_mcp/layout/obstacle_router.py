@@ -21,7 +21,7 @@ SHARE = 0.8  # extra cost per inch of running along a stretch another edge alrea
 STEPS = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 
-class Router:
+class ObstacleRouter:
     def __init__(self, boxes: list[Rect]) -> None:
         self.boxes = boxes
         xs, ys = set(), set()

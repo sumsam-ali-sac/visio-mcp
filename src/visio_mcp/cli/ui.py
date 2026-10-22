@@ -1,17 +1,18 @@
-"""Look and feel of the terminal app: palette, banner, panels, prompts."""
+"""Terminal output: palette, banner, status lines, panels, tables and spinners."""
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from contextlib import contextmanager
 from typing import Any, Iterator, Sequence
 
-import questionary
 from rich import box
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
@@ -30,20 +31,6 @@ console = Console(
     }),
     highlight=False,
 )
-
-# questionary styling to match
-QSTYLE = questionary.Style([
-    ("qmark", f"fg:{ACCENT} bold"),
-    ("question", "bold"),
-    ("answer", f"fg:{ACCENT2} bold"),
-    ("pointer", f"fg:{ACCENT} bold"),
-    ("highlighted", f"fg:{ACCENT} bold"),
-    ("selected", f"fg:{ACCENT2}"),
-    ("separator", f"fg:{MUTED}"),
-    ("instruction", f"fg:{MUTED} italic"),
-    ("text", ""),
-    ("disabled", f"fg:{MUTED} italic"),
-])
 
 _LOGO = [
     "██╗   ██╗██╗███████╗██╗ ██████╗      █████╗ ██╗",
@@ -101,7 +88,7 @@ def hint(msg: str) -> None:
     console.print(Text(f"  {msg}", style="muted"))
 
 
-def kv_table(rows: Sequence[tuple[str, Any]], title: str | None = None) -> Table:
+def kv_table(rows: Sequence[tuple[str, Any]]) -> Table:
     t = Table.grid(padding=(0, 2))
     t.add_column(style="muted", no_wrap=True)
     t.add_column()
@@ -124,55 +111,8 @@ def table(*columns: str, title: str | None = None) -> Table:
     return t
 
 
-def group(*items: Any) -> Group:
-    return Group(*items)
-
-
-# --- prompts ------------------------------------------------------------------------------
-
-
-class Cancelled(Exception):
-    """The user pressed Ctrl+C / Esc in a prompt."""
-
-
-def _ask(q: questionary.Question) -> Any:
-    ans = q.ask()
-    if ans is None:
-        raise Cancelled
-    return ans
-
-
-def select(message: str, choices: list[questionary.Choice | str], default: Any = None,
-           instruction: str = "↑↓ move · enter select") -> Any:
-    return _ask(questionary.select(message, choices=choices, default=default, style=QSTYLE,
-                                   qmark="◆", instruction=instruction, use_shortcuts=False))
-
-
-def checkbox(message: str, choices: list[questionary.Choice], instruction: str = "space toggle · enter confirm") -> list:
-    return _ask(questionary.checkbox(message, choices=choices, style=QSTYLE, qmark="◆", instruction=instruction))
-
-
-def text(message: str, default: str = "", instruction: str | None = None) -> str:
-    return _ask(questionary.text(message, default=default, style=QSTYLE, qmark="◆", instruction=instruction))
-
-
-def password(message: str) -> str:
-    return _ask(questionary.password(message, style=QSTYLE, qmark="◆"))
-
-
-def confirm(message: str, default: bool = True) -> bool:
-    return _ask(questionary.confirm(message, default=default, style=QSTYLE, qmark="◆"))
-
-
-def path(message: str, default: str = "") -> str:
-    return _ask(questionary.path(message, default=default, only_directories=True, style=QSTYLE, qmark="◆"))
-
-
-def choice(title: str, value: Any, description: str = "", disabled: str | None = None) -> questionary.Choice:
-    label = [("class:text", title)]
-    if description:
-        label.append(("class:instruction", f"  {description}"))
-    return questionary.Choice(title=label, value=value, disabled=disabled)
+def print_json(data: Any) -> None:
+    console.print(Syntax(json.dumps(data, indent=2), "json", theme="ansi_dark"))
 
 
 @contextmanager

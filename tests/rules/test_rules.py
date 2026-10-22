@@ -9,7 +9,7 @@ import pytest
 from visio_mcp import lint, rules
 from visio_mcp.spec import DiagramSpec
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RULES_DIR = ROOT / "src" / "visio_mcp" / "rules"
 EXPECTED_FILES = {"general", *rules.TYPES, "cloud-azure", "cloud-aws", "cloud-gcp"}
 

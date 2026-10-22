@@ -1,6 +1,5 @@
 """Patching a diagram drawn from a spec edits the spec (then it is re-rendered)."""
 
-from visio_mcp.spec.edit import apply_to_spec
 from visio_mcp.spec import (
     AddEdge,
     AddGroup,
@@ -16,6 +15,7 @@ from visio_mcp.spec import (
     UpdateEdge,
     UpdateNode,
 )
+from visio_mcp.spec.edit import apply_to_spec
 
 SPEC = DiagramSpec(
     title="Shop",

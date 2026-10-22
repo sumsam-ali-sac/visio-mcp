@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from pydantic import ValidationError
 
-from visio_mcp.spec import (
-    edge_name,
+from visio_mcp.spec.diagram import DiagramSpec, edge_name
+from visio_mcp.spec.patch import (
     AddEdge,
     AddGroup,
     AddNode,
-    DiagramSpec,
     Move,
     PatchOp,
     Relayout,

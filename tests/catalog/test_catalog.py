@@ -1,14 +1,10 @@
 
 from visio_mcp import catalog, style
+from visio_mcp.catalog.cloud import CLOUD_KINDS
+from visio_mcp.catalog.generic import GENERIC_KINDS
+from visio_mcp.catalog.stencils import BASFLO, FILLABLE
 
-CANONICAL = (
-    "process decision start end data document database service api webapp cache queue storage "
-    "function gateway loadbalancer external user client mobile server router switch firewall "
-    "cloud internet pc executive manager position entity box ellipse note "
-    "component container system person external-system actor cron worker microservice topic search "
-    "data-warehouse data-lake etl ml-model llm vector-db identity secrets monitoring logging cdn dns vpn waf "
-    "registry repo pipeline build test deploy artifact email notification payment state initial final mindmap-root"
-).split()
+CANONICAL = ["process", "decision", "start", "end", "data", "document", "database", "service", "api", "webapp", "cache", "queue", "storage", "function", "gateway", "loadbalancer", "external", "user", "client", "mobile", "server", "router", "switch", "firewall", "cloud", "internet", "pc", "executive", "manager", "position", "entity", "box", "ellipse", "note", "component", "container", "system", "person", "external-system", "actor", "cron", "worker", "microservice", "topic", "search", "data-warehouse", "data-lake", "etl", "ml-model", "llm", "vector-db", "identity", "secrets", "monitoring", "logging", "cdn", "dns", "vpn", "waf", "registry", "repo", "pipeline", "build", "test", "deploy", "artifact", "email", "notification", "payment", "state", "initial", "final", "mindmap-root"]
 
 
 def _all(stencil: str, master: str) -> bool:
@@ -43,7 +39,7 @@ def test_every_kind_is_well_formed():
 
 
 def test_names_unique_and_lowercase():
-    names = [k.name for k in catalog._KINDS + catalog._CLOUD_KINDS]
+    names = [k.name for k in GENERIC_KINDS + CLOUD_KINDS]
     assert len(names) == len(set(names))
     assert all(n == n.lower() and " " not in n for n in names)
 
@@ -52,19 +48,19 @@ def test_generic_kinds_resolve_to_clean_geometry():
     for n in ("service", "api", "webapp", "function", "gateway", "external", "queue", "cache", "storage",
               "database", "decision", "start", "document", "box"):
         r = catalog.resolve(n, _all)
-        assert r.shape.stencil in catalog._FILLABLE, n
+        assert r.shape.stencil in FILLABLE, n
         assert not r.icon, n
 
 
 def test_icon_flag_for_icon_masters():
     r = catalog.resolve("firewall", _all)
-    assert r.shape.stencil not in catalog._FILLABLE
+    assert r.shape.stencil not in FILLABLE
     assert r.icon
     assert not catalog.resolve("process", _all).icon
 
 
 def test_aliases_point_at_real_kinds():
-    for alias, target in catalog._ALIASES.items():
+    for alias, target in catalog.ALIASES.items():
         assert target in catalog.kinds(), alias
         assert alias not in catalog.kinds() or alias == target, alias
 
@@ -119,8 +115,8 @@ def test_cloud_kind_uses_provider_master_when_available():
 
 def test_cloud_kind_falls_back_to_base_silently():
     k = catalog.kinds()["aws-rds"]
-    r = catalog.resolve("aws-rds", lambda s, m: s == catalog._BASFLO)
-    assert r.shape == catalog.Shape(catalog._BASFLO, "Database")
+    r = catalog.resolve("aws-rds", lambda s, m: s == BASFLO)
+    assert r.shape == catalog.Shape(BASFLO, "Database")
     assert r.kind is k and k.provider == "aws" and k.glyph  # original kind kept
     assert r.warning is None and not r.icon
     # no provider candidates at all (GCP) -> base shape, still no warning
