@@ -1,4 +1,4 @@
-"""Page size, the page background rectangle, z-order and fit-to-contents."""
+"""Page size, the page background rectangle and z-order above it."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from visio_mcp.output.visio.cells import OBJ_TYPE_NONE, rgb, set_cell, set_cells
 from visio_mcp.output.visio.names import find_opt, set_name
 
 BACKGROUND = "__background"
-SEL_TYPE_ALL = 1  # visSelTypeAll
 DRAWING_SIZE_CUSTOM = 3  # DrawingSizeType: custom page size
 DRAWING_NO_AUTO_RESIZE = 2  # DrawingResizeType: do not grow the page as shapes move
 
@@ -26,22 +25,6 @@ def set_size(page: Any, width: float, height: float, background: str | None) -> 
             bg.Delete()
     else:
         draw_background(page, rgb(background), bg)
-
-
-def fit(page: Any, margin: float) -> None:
-    """Resize the page to its contents plus margin, keeping the background covering it."""
-    bg = find_opt(page, BACKGROUND)
-    fill = None
-    if bg is not None:  # take it out so the fit sees only the drawing, then rebuild it
-        fill = bg.CellsU("FillForegnd").FormulaU
-        bg.Delete()
-    page.ResizeToFitContents()
-    sheet = page.PageSheet
-    for cell in ("PageWidth", "PageHeight"):
-        sheet.CellsU(cell).ResultIU += 2 * margin
-    page.CreateSelection(SEL_TYPE_ALL, 0).Move(margin, margin)
-    if fill is not None:
-        draw_background(page, fill, None)
 
 
 def draw_background(page: Any, fill_formula: str, bg: Any | None) -> None:

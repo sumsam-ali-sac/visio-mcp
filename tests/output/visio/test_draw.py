@@ -6,12 +6,12 @@ from pathlib import Path
 import pytest
 
 from visio_mcp.output.visio.backend import ShapeInfo
-from visio_mcp.plan import build_plan
 from visio_mcp.output.visio.draw import render_spec
 from visio_mcp.output.visio.inspect import find_overlaps
+from visio_mcp.plan import build_plan
 from visio_mcp.spec import DiagramSpec, Edge, Group, Node
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def box(name, x, y, w=1.0, h=1.0, **kw):

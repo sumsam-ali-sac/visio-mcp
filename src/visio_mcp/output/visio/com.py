@@ -241,10 +241,6 @@ class VisioCom:
         self._tick()
 
     @guard
-    def send_to_back(self, name: str) -> None:
-        page.to_back(self._page(), self._find(name))
-
-    @guard
     def move(self, name: str, x: float, y: float) -> None:
         shapes.move(self._find(name), x, y)
 
@@ -261,12 +257,6 @@ class VisioCom:
     @guard
     def set_page(self, width: float, height: float, background: str | None = None) -> None:
         page.set_size(self._page(), width, height, background)
-        if self._visible:
-            app.fit_window(self._app)
-
-    @guard
-    def fit_page(self, margin: float = 0.5) -> None:
-        page.fit(self._page(), margin)
         if self._visible:
             app.fit_window(self._app)
 

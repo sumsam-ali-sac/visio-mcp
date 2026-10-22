@@ -1,4 +1,4 @@
-"""In-memory VisioBackend for tests. Records calls and lays shapes out on a simple grid."""
+"""In-memory VisioBackend for tests: records every call and keeps a simple model of the page."""
 
 from __future__ import annotations
 
@@ -33,7 +33,6 @@ class FakeVisio:
         self.lines: dict[str, dict] = {}  # name -> dict(points, style, pattern, arrow)
         self.page: dict = dict(width=8.5, height=11.0, background=None)
         self.z_order: list[str] = []  # back to front
-        self.fits: list[float] = []  # fit_page margins
         self.presented = 0
         self.images: dict[str, str] = {}  # name -> imported icon file
 
@@ -119,7 +118,7 @@ class FakeVisio:
         self.containers[name] = list(members)
         self.container_styles[name] = style
         self.container_bounds[name] = bounds
-        self.send_to_back(name)
+        self._to_back(name)
 
     def add_box(self, name: str, x: float, y: float, width: float, height: float, style: ShapeStyle) -> None:
         self._add(ShapeInfo(name, "", None, x, y, width, height))
@@ -135,8 +134,7 @@ class FakeVisio:
                             is_connector=True))
         self.lines[name] = dict(points=((x1, y1), (x2, y2)), style=style, pattern=pattern, arrow=arrow)
 
-    def send_to_back(self, name: str) -> None:
-        self._get(name)
+    def _to_back(self, name: str) -> None:
         self.z_order.remove(name)
         self.z_order.insert(1 if self.z_order[:1] == [BACKGROUND] and name != BACKGROUND else 0, name)
 
@@ -165,28 +163,7 @@ class FakeVisio:
         if background is not None:
             self._add(ShapeInfo(BACKGROUND, "", None, width / 2, height / 2, width, height))
             self.boxes[BACKGROUND] = ShapeStyle(fill=background, line=None)
-            self.send_to_back(BACKGROUND)
-
-    def fit_page(self, margin: float = 0.5) -> None:
-        """Shift the drawing to (margin, margin) and size the page around it; background follows."""
-        self.fits.append(margin)
-        content = [s for n, s in self.items.items() if n != BACKGROUND and not (s.is_connector and s.width == 0)]
-        if not content:
-            return
-        left = min(s.x - s.width / 2 for s in content)
-        bottom = min(s.y - s.height / 2 for s in content)
-        right = max(s.x + s.width / 2 for s in content)
-        top = max(s.y + s.height / 2 for s in content)
-        for n, s in self.items.items():
-            if n != BACKGROUND:
-                s.x, s.y = s.x - left + margin, s.y - bottom + margin
-        for line in self.lines.values():
-            line["points"] = tuple((x - left + margin, y - bottom + margin) for x, y in line["points"])
-        w, h = right - left + 2 * margin, top - bottom + 2 * margin
-        self.page.update(width=w, height=h)
-        if BACKGROUND in self.items:
-            bg = self.items[BACKGROUND]
-            bg.x, bg.y, bg.width, bg.height = w / 2, h / 2, w, h
+            self._to_back(BACKGROUND)
 
     def present(self) -> None:
         self.presented += 1

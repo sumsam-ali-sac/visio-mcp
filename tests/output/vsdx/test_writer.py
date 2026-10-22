@@ -12,12 +12,12 @@ from pathlib import Path
 import pytest
 
 from visio_mcp.layout import Rect
+from visio_mcp.output.vsdx import write_vsdx
 from visio_mcp.plan import DiagramPlan, build_plan
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import GEOMETRY_MIN, ICON_SIZE
-from visio_mcp.output.vsdx import write_vsdx
 
-EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
+EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
 V = "{http://schemas.microsoft.com/office/visio/2012/main}"
 CT = "{http://schemas.openxmlformats.org/package/2006/content-types}"
 PR = "{http://schemas.openxmlformats.org/package/2006/relationships}"

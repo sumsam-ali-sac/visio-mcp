@@ -2,9 +2,9 @@ import pytest
 
 from visio_mcp import catalog
 from visio_mcp.catalog import Resolved, Shape
+from visio_mcp.output.visio.draw import render_spec
 from visio_mcp.output.visio.edit import apply_ops
 from visio_mcp.output.visio.inspect import inspect
-from visio_mcp.output.visio.draw import render_spec
 from visio_mcp.spec import (
     AddEdge,
     AddNode,

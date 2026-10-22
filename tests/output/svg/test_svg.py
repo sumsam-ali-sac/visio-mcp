@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 
 from visio_mcp.output import svg as svgmod
+from visio_mcp.output.svg import raster
 from visio_mcp.plan import build_plan
 from visio_mcp.spec import DiagramSpec
 
-EXAMPLES = Path(__file__).parent.parent / "examples"
+EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
 NS = {"s": "http://www.w3.org/2000/svg"}
 
 
@@ -89,8 +90,8 @@ def test_write_html(tmp_path):
 def test_svg_to_png_without_rasterizer(tmp_path, monkeypatch):
     p = tmp_path / "a.svg"
     p.write_text(svgmod.render_svg(_plan()))
-    monkeypatch.setattr(svgmod, "_png_playwright", lambda *a, **k: False)
-    monkeypatch.setattr(svgmod, "_png_cairosvg", lambda *a, **k: False)
+    monkeypatch.setattr(raster, "_png_playwright", lambda *a, **k: False)
+    monkeypatch.setattr(raster, "_png_cairosvg", lambda *a, **k: False)
     assert svgmod.svg_to_png(p, tmp_path / "a.png") is None
 
 
@@ -101,6 +102,6 @@ def test_svg_to_png_swallows_errors(tmp_path, monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("no browser")
 
-    monkeypatch.setattr(svgmod, "_png_playwright", boom)
-    monkeypatch.setattr(svgmod, "_png_cairosvg", boom)
+    monkeypatch.setattr(raster, "_png_playwright", boom)
+    monkeypatch.setattr(raster, "_png_cairosvg", boom)
     assert svgmod.svg_to_png(p, tmp_path / "a.png") is None

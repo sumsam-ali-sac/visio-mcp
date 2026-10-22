@@ -12,8 +12,8 @@ import pywintypes  # noqa: E402
 import win32com.client  # noqa: E402
 
 from visio_mcp.output.visio.backend import TextRun  # noqa: E402
-from visio_mcp.style import PROFESSIONAL, EdgeStyle, ShapeStyle, TextStyle  # noqa: E402
 from visio_mcp.output.visio.com import BACKGROUND, VisioCom  # noqa: E402
+from visio_mcp.style import PROFESSIONAL, EdgeStyle, ShapeStyle, TextStyle  # noqa: E402
 
 pytestmark = pytest.mark.visio
 
@@ -298,26 +298,20 @@ def test_boxes_texts_lines(v):
         v.add_box("__legend", 0, 0, 1, 1, PROFESSIONAL.legend)
 
 
-def test_page_background_covers_page_after_fit(v):
+def test_page_background_covers_page_when_resized(v):
     v.set_page(11.0, 8.5, background="#0B1F3A")
     sheet = v._page().PageSheet
     assert (sheet.CellsU("PageWidth").ResultIU, sheet.CellsU("PageHeight").ResultIU) == (11.0, 8.5)
     v.drop_shape("a", "BASFLO_U.VSSX", "Process", 2.0, 2.0)
     v.drop_shape("b", "BASFLO_U.VSSX", "Process", 6.0, 3.0)
     v.connect("a->b", "a", "b")
-    v.send_to_back("a")
-    v.fit_page(0.5)
-    pw, ph = sheet.CellsU("PageWidth").ResultIU, sheet.CellsU("PageHeight").ResultIU
-    assert pw < 11.0 and ph < 8.5  # shrank to the content
+    v.add_container("g", "G", ["a"])
+    v.set_page(7.0, 4.0, background="#F8FAFC")  # resizes the existing background
     bg = by_name(v)[BACKGROUND]
-    assert (round(bg.x, 3), round(bg.y, 3)) == (round(pw / 2, 3), round(ph / 2, 3))
-    assert (round(bg.width, 3), round(bg.height, 3)) == (round(pw, 3), round(ph, 3))
-    assert formula(v, BACKGROUND, "FillForegnd") == "RGB(11,31,58)"
-    assert v._page().Shapes(1).NameU == BACKGROUND  # still the very back
-    for name in ("a", "b"):
-        s = by_name(v)[name]
-        assert s.x - s.width / 2 >= 0.5 - 1e-3 and s.y - s.height / 2 >= 0.5 - 1e-3
-    v.set_page(pw, ph, background=None)
+    assert (round(bg.x, 3), round(bg.y, 3), round(bg.width, 3), round(bg.height, 3)) == (3.5, 2.0, 7.0, 4.0)
+    assert formula(v, BACKGROUND, "FillForegnd") == "RGB(248,250,252)"
+    assert v._page().Shapes(1).NameU == BACKGROUND  # still the very back, behind the container
+    v.set_page(7.0, 4.0, background=None)
     assert BACKGROUND not in by_name(v)
     v.present()  # no-op headless
 
@@ -334,7 +328,6 @@ def _draw_small(v):
     v.connect("a->b", "a", "b", label="next")
     v.style_connector("a->b", PROFESSIONAL.edge)
     v.add_container("g", "Group", ["a", "b"], PROFESSIONAL.group_style("generic"))
-    v.fit_page(0.5)
     v.present()
     return by_name(v)
 
