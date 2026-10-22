@@ -1,0 +1,31 @@
+[project]
+name = "visio-mcp"
+version = "0.1.0"
+description = "MCP server that drives Microsoft Visio to generate any diagram from a semantic spec"
+authors = [
+    { name = "Sumsam Ali - Imperium Dynamics", email = "sumsam.ali@imperiumdynamics.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=2.3.0",
+    "pydantic>=2.14.1",
+    "pywin32>=312",
+]
+
+[project.scripts]
+visio-mcp = "visio_mcp.server:main"
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+markers = ["visio: needs Microsoft Visio installed (run with -m visio)"]
+addopts = "-m 'not visio'"
