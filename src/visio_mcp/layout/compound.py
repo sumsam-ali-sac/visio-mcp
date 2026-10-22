@@ -25,7 +25,14 @@ from visio_mcp.layout.layered import (
     order,
     rank_dag,
 )
-from visio_mcp.layout.model import COMPACT_GAP, LOOP, NODE_GAP, RANK_GAP_LR, RANK_GAP_TB, Frame
+from visio_mcp.layout.model import (
+    COMPACT_GAP,
+    LOOP,
+    NODE_GAP,
+    RANK_GAP_LR,
+    RANK_GAP_TB,
+    Frame,
+)
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import GroupStyle, NodeSize, text_width
 

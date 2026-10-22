@@ -18,13 +18,19 @@ from visio_mcp.layout.compound import Compound, Placed
 from visio_mcp.layout.manual import manual_positions
 from visio_mcp.layout.model import Frame, LayoutResult, Point, Rect
 from visio_mcp.layout.router import Router
-from visio_mcp.layout.routing import layered_route, ortho_route, self_loop, simplify, straight_route
+from visio_mcp.layout.routing import (
+    layered_route,
+    ortho_route,
+    self_loop,
+    simplify,
+    straight_route,
+)
 from visio_mcp.layout.swimlane import swimlane_layout
 from visio_mcp.layout.tree import is_forest, tree_layout
 from visio_mcp.spec import DiagramSpec
 from visio_mcp.style import GroupStyle, NodeSize
 
-__all__ = ["Rect", "Point", "LayoutResult", "compute_layout"]
+__all__ = ["LayoutResult", "Point", "Rect", "compute_layout"]
 
 Direction = Literal["tb", "lr", "none"]
 

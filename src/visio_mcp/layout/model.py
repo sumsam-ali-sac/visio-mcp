@@ -78,13 +78,13 @@ class Frame:
     def rect(self, u: float, v: float, cw: float, ah: float) -> Rect:
         return Rect(v, -u, ah, cw) if self.lr else Rect(u, -v, cw, ah)
 
-    def insets(self, st: GroupStyle, header_along: bool = False) -> tuple[float, float, float, float]:
+    def insets(self, st: GroupStyle) -> tuple[float, float, float, float]:
         """(u before, u after, v before, v after) a group frame adds around its members.
 
         The header band sits at the page top: v-before for top-to-bottom, u-before for
-        left-to-right. header_along forces it to v-before (swimlane headers at lane starts).
+        left-to-right.
         """
         p, hh = st.padding, st.header_height
-        if self.lr and not header_along:
+        if self.lr:
             return p + hh, p, p, p
         return p, p, p + hh, p

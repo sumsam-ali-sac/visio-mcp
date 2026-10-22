@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import random
 import time
@@ -162,7 +163,7 @@ def test_routes_start_and_end_on_borders(graph: str, preset: str):
         assert _on_border(pts[0], r.nodes[e.source]), (e.source, pts)
         assert _on_border(pts[-1], r.nodes[e.target]), (e.target, pts)
         if preset in LAYERED or preset in ("grid", "compact", "none") or e.source == e.target:
-            for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+            for (x1, y1), (x2, y2) in itertools.pairwise(pts):
                 assert abs(x1 - x2) < EPS or abs(y1 - y2) < EPS, f"diagonal segment in {e.source}->{e.target}"
 
 
@@ -267,11 +268,11 @@ def test_lanes_span_and_stack(preset: str):
     assert r.lane_header == ("left" if lr else "top")
     if lr:  # horizontal bands, first lane on top, touching
         assert len({(round(x.left, 4), round(x.w, 4)) for x in lanes}) == 1
-        for upper, lower in zip(lanes, lanes[1:]):
+        for upper, lower in itertools.pairwise(lanes):
             assert upper.bottom == pytest.approx(lower.top)
     else:
         assert len({(round(x.top, 4), round(x.h, 4)) for x in lanes}) == 1
-        for left, right in zip(lanes, lanes[1:]):
+        for left, right in itertools.pairwise(lanes):
             assert left.right == pytest.approx(right.left)
 
 

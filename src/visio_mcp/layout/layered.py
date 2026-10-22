@@ -12,7 +12,14 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Literal
 
-from visio_mcp.layout.model import DUMMY_GAP, LABEL_PT, LANE_GAP, LOOP, NODE_GAP, TRACK_GAP
+from visio_mcp.layout.model import (
+    DUMMY_GAP,
+    LABEL_PT,
+    LANE_GAP,
+    LOOP,
+    NODE_GAP,
+    TRACK_GAP,
+)
 from visio_mcp.style import text_width
 
 EPS = 1e-6

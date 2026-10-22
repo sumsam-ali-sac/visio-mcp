@@ -75,6 +75,6 @@ errors to `LLMError`. Register it in `make_llm` and `ai/config.py`.
 ## Tests
 
 ```powershell
-uv run pytest              # ~600 tests, no Visio needed (FakeVisio records every backend call)
+uv run pytest              # 1,200+ tests, no Visio needed (FakeVisio records every backend call)
 uv run pytest -m visio     # real Visio over COM, on Windows
 ```

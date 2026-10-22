@@ -8,6 +8,7 @@ enters a side midpoint of the target. Cost = length + a penalty per bend.
 from __future__ import annotations
 
 import heapq
+import itertools
 from bisect import bisect_left
 
 from visio_mcp.layout.model import Point, Rect
@@ -35,7 +36,7 @@ class Router:
 
     def blocked(self, pts: list[Point], skip: tuple[Rect, ...]) -> bool:
         """Does the polyline pass through any box other than skip?"""
-        for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+        for (x1, y1), (x2, y2) in itertools.pairwise(pts):
             lo_x, hi_x, lo_y, hi_y = min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2)
             for r in self.boxes:
                 if any(r is s for s in skip):
@@ -74,7 +75,7 @@ class Router:
                 continue
             if cell in goals and d != goals[cell][2]:
                 pts = self._unwind((cell, d), prev)
-                for (c1, _), (c2, _) in zip(pts, pts[1:]):
+                for (c1, _), (c2, _) in itertools.pairwise(pts):
                     self._used |= {(c1, c2), (c2, c1)}
                 self._ports_used |= {border_of[pts[0]], goals[cell][0]}
                 return [border_of[pts[0]], *[self._pt(c) for c, _ in pts], goals[cell][0]]
