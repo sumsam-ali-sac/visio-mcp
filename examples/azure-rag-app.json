@@ -1,0 +1,38 @@
+{
+  "title": "Contoso Assistant",
+  "subtitle": "Azure reference architecture · RAG chat app",
+  "type": "cloud",
+  "groups": [
+    {"id": "sub", "label": "Production Subscription", "kind": "cloud"},
+    {"id": "region", "label": "West Europe", "kind": "region", "parent": "sub"},
+    {"id": "vnet", "label": "App VNet", "kind": "network", "parent": "region"},
+    {"id": "app", "label": "App Subnet", "kind": "subnet", "parent": "vnet"},
+    {"id": "data", "label": "Data Subnet", "kind": "subnet", "parent": "vnet"},
+    {"id": "shared", "label": "Shared Services", "kind": "tier", "parent": "region"}
+  ],
+  "nodes": [
+    {"id": "user", "label": "Employee", "kind": "user"},
+    {"id": "fd", "label": "Front Door", "kind": "azure-front-door", "group": "region"},
+    {"id": "web", "label": "Chat Web App", "kind": "azure-app-service", "technology": "React", "group": "app"},
+    {"id": "api", "label": "Orchestrator", "kind": "azure-container-apps", "technology": "Python / FastAPI", "group": "app", "emphasis": true},
+    {"id": "ingest", "label": "Ingestion", "kind": "azure-functions", "group": "app"},
+    {"id": "search", "label": "AI Search", "kind": "azure-ai-search", "group": "data"},
+    {"id": "docs", "label": "Documents", "kind": "azure-blob-storage", "group": "data"},
+    {"id": "history", "label": "Chat History", "kind": "azure-cosmos-db", "group": "data"},
+    {"id": "aoai", "label": "Azure OpenAI", "kind": "azure-openai", "technology": "GPT-4o", "group": "shared"},
+    {"id": "kv", "label": "Key Vault", "kind": "azure-key-vault", "group": "shared"},
+    {"id": "entra", "label": "Entra ID", "kind": "azure-entra-id", "group": "shared"}
+  ],
+  "edges": [
+    {"source": "user", "target": "fd", "label": "HTTPS"},
+    {"source": "fd", "target": "web"},
+    {"source": "web", "target": "api", "label": "REST"},
+    {"source": "api", "target": "search", "label": "vector query"},
+    {"source": "api", "target": "aoai", "label": "completions"},
+    {"source": "api", "target": "history", "label": "reads/writes"},
+    {"source": "docs", "target": "ingest", "label": "blob created", "style": "dashed"},
+    {"source": "ingest", "target": "search", "label": "indexes"},
+    {"source": "api", "target": "kv", "label": "secrets", "style": "dotted"},
+    {"source": "web", "target": "entra", "label": "sign-in", "style": "dotted"}
+  ]
+}

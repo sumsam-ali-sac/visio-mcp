@@ -11,7 +11,7 @@ def spec(**kw):
 
 def test_minimal_spec_defaults():
     s = spec()
-    assert s.layout == "flowchart-tb"
+    assert (s.layout, s.type, s.theme) == ("auto", "auto", "auto")
     assert s.nodes[0].kind == "process"
     assert s.edges[0].arrow == "end"
 

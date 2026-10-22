@@ -1,0 +1,336 @@
+{
+  "$defs": {
+    "Edge": {
+      "properties": {
+        "source": {
+          "description": "Id of the node the edge starts at.",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "description": "Id of the node the edge points to.",
+          "title": "Target",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "description": "Verb or protocol, e.g. 'HTTPS', 'reads', 'yes'. Short.",
+          "title": "Label",
+          "type": "string"
+        },
+        "style": {
+          "default": "solid",
+          "description": "solid = sync call, dashed = async/event, dotted = optional.",
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "arrow": {
+          "default": "end",
+          "enum": [
+            "end",
+            "both",
+            "none"
+          ],
+          "title": "Arrow",
+          "type": "string"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override line color. Prefer themes.",
+          "title": "Color"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "Group": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "default": "generic",
+          "description": "What the container means; drives its styling.",
+          "enum": [
+            "generic",
+            "tier",
+            "system",
+            "boundary",
+            "cloud",
+            "region",
+            "zone",
+            "network",
+            "subnet",
+            "cluster",
+            "environment",
+            "lane",
+            "external"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the enclosing group, for nesting (region > vnet > subnet).",
+          "title": "Parent"
+        },
+        "fill": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fill"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Group",
+      "type": "object"
+    },
+    "Node": {
+      "properties": {
+        "id": {
+          "description": "Unique id, referenced by edges. Short, no spaces, e.g. 'api'.",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "description": "Text shown on the shape. Defaults to the id. At most ~4 words.",
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "default": "process",
+          "description": "Semantic shape kind, e.g. service, database, queue, user, decision, azure-functions, aws-lambda. Call list_kinds for the full list.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the innermost group (container) this node sits in.",
+          "title": "Group"
+        },
+        "technology": {
+          "default": "",
+          "description": "Tech in brackets under the label, e.g. 'Python / FastAPI'.",
+          "title": "Technology",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "description": "One short sentence shown in small text. Optional.",
+          "title": "Description",
+          "type": "string"
+        },
+        "emphasis": {
+          "default": false,
+          "description": "Highlight this node (accent border).",
+          "title": "Emphasis",
+          "type": "boolean"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Custom icon: path to an .svg or .png file. Cloud kinds get official icons automatically once the icon packs are installed (visio-ai icons install).",
+          "title": "Icon"
+        },
+        "fill": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override fill color, e.g. '#DCEBFF'. Prefer themes.",
+          "title": "Fill"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inches from left. Only used when layout is 'none'.",
+          "title": "X"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inches from bottom. Only used when layout is 'none'.",
+          "title": "Y"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "Node",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "title": {
+      "default": "Diagram",
+      "title": "Title",
+      "type": "string"
+    },
+    "subtitle": {
+      "default": "",
+      "description": "One line under the title: scope, audience or version.",
+      "title": "Subtitle",
+      "type": "string"
+    },
+    "type": {
+      "default": "auto",
+      "description": "What kind of diagram this is; drives rules and defaults.",
+      "enum": [
+        "auto",
+        "flowchart",
+        "architecture",
+        "cloud",
+        "c4-context",
+        "c4-container",
+        "deployment",
+        "network",
+        "dataflow",
+        "pipeline",
+        "erd",
+        "org",
+        "swimlane",
+        "state",
+        "mindmap"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "layout": {
+      "default": "auto",
+      "enum": [
+        "auto",
+        "flowchart-tb",
+        "flowchart-lr",
+        "tree-tb",
+        "tree-lr",
+        "swimlane-lr",
+        "swimlane-tb",
+        "radial",
+        "circular",
+        "grid",
+        "compact",
+        "none"
+      ],
+      "title": "Layout",
+      "type": "string"
+    },
+    "theme": {
+      "default": "auto",
+      "description": "Visual theme; call list_themes. 'auto' picks one from the type.",
+      "title": "Theme",
+      "type": "string"
+    },
+    "legend": {
+      "default": true,
+      "description": "Draw a legend of the shapes and line styles used.",
+      "title": "Legend",
+      "type": "boolean"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/Node"
+      },
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Edge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "groups": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Group"
+      },
+      "title": "Groups",
+      "type": "array"
+    }
+  },
+  "required": [
+    "nodes"
+  ],
+  "title": "DiagramSpec",
+  "type": "object"
+}

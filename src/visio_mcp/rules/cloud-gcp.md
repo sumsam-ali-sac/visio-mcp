@@ -1,0 +1,65 @@
+# Google Cloud conventions
+
+Follow Google Cloud's architecture diagramming conventions (the Architecture Center
+and the official icon set): product names as Google writes them, project and network
+scopes as containers, user on the left.
+
+## Group hierarchy (outer to inner)
+| Scope | Group kind | Label example |
+|---|---|---|
+| Organization / folder (rarely needed) | `cloud` | `example.com` |
+| Project | `cloud` | `shop-prod` |
+| Region | `region` | `europe-west1` |
+| VPC network | `network` | `shop-vpc` |
+| Subnet (regional) or zone | `subnet` / `zone` | `app-subnet 10.10.0.0/20`, `europe-west1-b` |
+| GKE cluster / managed instance group | `cluster` | `GKE Autopilot Cluster` |
+
+- VPC networks are global in Google Cloud and subnets are regional; when one region is
+  shown, Project > Region > VPC > Subnet reads best. For multi-region, use Project >
+  VPC > Region-scoped subnets (label the subnet with its region).
+- Serverless and managed services (Cloud Run, Cloud Functions, Pub/Sub, BigQuery,
+  Cloud Storage, Firestore) sit in the project or region, outside the VPC; show
+  Serverless VPC Access or Private Service Connect edges when they reach the VPC.
+- Global services outside the region: Cloud Load Balancing (global), Cloud CDN, Cloud
+  DNS, Cloud Armor, IAM.
+
+## Kinds (provider-prefixed; confirm with `list_kinds`)
+- Compute: `gcp-cloud-run`, `gcp-cloud-functions`, `gcp-gke`, `gcp-compute-engine`,
+  `gcp-app-engine`, `gcp-cloud-scheduler`.
+- Data: `gcp-cloud-sql`, `gcp-spanner`, `gcp-firestore`, `gcp-bigtable`,
+  `gcp-cloud-storage`, `gcp-memorystore`, `gcp-bigquery`, `gcp-artifact-registry`.
+- Integration: `gcp-pubsub`, `gcp-dataflow`, `gcp-api-gateway`.
+- Networking: `gcp-cloud-load-balancing`, `gcp-cloud-cdn`, `gcp-cloud-dns`, `gcp-vpc`.
+- Security: `gcp-iam`, `gcp-secret-manager`, `gcp-cloud-armor`.
+- AI/analytics/DevOps: `gcp-vertex-ai`, `gcp-dataproc`, `gcp-cloud-build`.
+- Operations: `gcp-cloud-monitoring`, `gcp-cloud-logging`.
+- Also: `gcp-eventarc`, `gcp-alloydb`, `gcp-looker`.
+- A service with no kind yet: use the generic kind (`queue`, `database`, `service`)
+  and the official name in `technology`.
+
+## Naming
+Official names: `Cloud Run`, `Cloud Storage` (not GCS in labels), `BigQuery`,
+`Pub/Sub`, `Google Kubernetes Engine (GKE)`, `Vertex AI`, `Cloud SQL`. Role label
+when there are several (`Checkout Service`, technology `Cloud Run`).
+
+## Reference patterns
+- **Web app + API + data**: Cloud Load Balancing (+ Cloud Armor, Cloud CDN) -> Cloud
+  Run (frontend) -> Cloud Run (API) -> Cloud SQL or Firestore; Secret Manager.
+- **Event-driven**: producers -> Pub/Sub topic -> Eventarc -> Cloud Run / Cloud
+  Functions -> Firestore; dead-letter topic dashed.
+- **Data platform**: sources -> Pub/Sub (stream) and Cloud Storage (batch) -> Dataflow
+  -> BigQuery -> Looker.
+- **AI / RAG app**: client -> Cloud Run -> Vertex AI (Gemini) for generation + Vertex
+  AI Search or AlloyDB/pgvector for retrieval; Cloud Storage documents -> Cloud Run
+  job -> embeddings.
+
+## Edge labels
+`HTTPS`, `gRPC`, `publishes`, `push subscription`, `SQL`, `streams`, `loads`
+(Dataflow -> BigQuery), `invokes`, `Private Service Connect`.
+
+## Common mistakes
+- Drawing a VPC per region (VPCs are global; subnets are regional).
+- Cloud Run or BigQuery inside a subnet.
+- Abbreviations as labels (GCS, GCE) instead of product names.
+- Using AWS-style public/private subnet colors; Google Cloud diagrams separate by
+  project and network, not subnet color.

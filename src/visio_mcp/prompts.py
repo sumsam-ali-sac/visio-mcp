@@ -5,98 +5,105 @@ from __future__ import annotations
 from typing import Literal
 
 GUIDE = """\
-# Authoring Visio diagrams
+# Authoring professional Visio diagrams
 
-Write ONE DiagramSpec that describes the diagram by meaning (nodes, edges, groups, layout).
-Never place shapes by coordinates; the server lays it out and draws it in Visio.
+You describe a diagram by MEANING (nodes, edges, groups, type). The server picks shapes,
+lays everything out, applies a theme (fonts, colors, line styles), adds a title block and a
+legend, and draws it in Visio. Never place shapes by coordinates.
 
-## 1. Pick a layout
-- flowchart-tb: processes, pipelines, decisions (default).
-- flowchart-lr: architecture and data flow, left to right (clients -> services -> data).
-- tree-tb: hierarchies, org charts, containment (root on top). tree-lr: same, root on the left.
-- radial: one hub with spokes (a gateway or core service and its clients).
-- ERDs: flowchart-lr (or tree-tb when one table owns the rest).
-- compact: an indented tree, top-left root; rarely the best choice.
-- circular / none: rare. "none" keeps your own x/y values.
+## 1. Decide what the diagram answers
+One diagram, one question, one audience. Pick `type`:
+flowchart (process with decisions) | architecture (components and data flow) |
+cloud (Azure/AWS/GCP services) | c4-context | c4-container | deployment | network |
+dataflow | pipeline (CI/CD, ETL) | erd | org | swimlane (who does what) | state | mindmap.
+Then call get_diagram_rules(type) — it has the conventions, a checklist and an example.
+Big systems become several diagrams (context, containers, deployment), not one huge one.
 
-## 2. Size it
-- Aim for 5 to 30 nodes. Bigger systems become several diagrams: context (system and
-  actors), containers (apps, services, stores), deployment (hosts, networks).
-- Each diagram answers one question.
+## 2. Write ONE spec
+- title: short and specific ("Checkout Service — Containers"). subtitle: scope, version, date.
+- nodes (5-30): id (short, snake_case), label (Title Case, at most 4 words), kind
+  (from list_kinds — cloud kinds like azure-functions / aws-lambda / gcp-cloud-run for cloud
+  diagrams), technology ("Python / FastAPI"), description (one short sentence, optional),
+  emphasis (true on the 1-2 nodes the diagram is about).
+- edges: source -> target, label = protocol or verb in lowercase ("HTTPS", "publishes order
+  events", "yes"). style: solid = synchronous, dashed = asynchronous/event, dotted = optional.
+- groups: tiers, trust boundaries, cloud hierarchy, lanes. kind sets the look:
+  tier | system | boundary | cloud | region | zone | network | subnet | cluster | environment |
+  lane | external. Nest with parent (cloud > region > network > subnet).
+- type/layout/theme may stay "auto": layout follows the type (flowchart top-to-bottom,
+  architecture left-to-right, org as a tree, swimlanes as lanes); theme follows the cloud
+  provider (azure / aws / gcp), c4 for C4 diagrams, else professional. Themes: list_themes.
+Labels are cased automatically, but write them well: nouns for nodes, verbs for edges.
 
-## 3. Write the spec
-- Ids: short, unique, no spaces (api, orders_db). Labels: at most 4 words.
-- kind: a semantic kind from list_kinds (service, database, queue, user, decision, ...).
-  Call list_kinds when unsure. Do not guess shape names.
-- Flowcharts use flowchart kinds (start, process, decision, document, end) for every step,
-  even steps like "Deploy"; architecture and network kinds draw large icons.
-- groups: tiers (Presentation, Services, Data), trust boundaries (Internet, VPC), or
-  environments. A node sits in at most one group via its "group" field.
-- edges: arrows from source to target between nodes only. Add a label only when it adds
-  meaning ("HTTPS", "SQL", "yes"/"no"). style "dashed" for async or optional flows.
-- Decisions: kind "decision" with exactly two outgoing edges labeled with the branches.
-- Titles: short and descriptive.
+## 3. Check, then render once
+Optional: lint_diagram(spec) lists rule findings without drawing. Then call render_diagram
+once with the whole spec. It draws live in the user's Visio window and returns overlaps,
+warnings, suggestions (rule findings) and a PNG preview.
 
-## 4. Render once
-Call render_diagram once with the whole spec and a meaningful name. Never render node by node.
+## 4. Review loop (at most 3 passes)
+1. overlaps must be empty; read every warning and suggestion.
+2. Look at the preview: readable labels, obvious flow, tidy groups, no tangles.
+3. Fix with ONE patch_diagram batch per pass: update_node (label, kind, group, technology,
+   description, emphasis), update_edge (label, style, arrow), add_node, add_edge, add_group,
+   remove (node, group or "source->target"), update_diagram (title, subtitle, theme, layout,
+   legend), relayout. The diagram re-lays-out and keeps its styling.
+4. Stop when it is presentable; report what remains after three passes.
 
-## 5. Review loop (at most 3 passes)
-1. Read the result. overlaps must be empty. Read every warning.
-2. Look at the PNG preview: labels readable, flow obvious, no tangled edges.
-3. If a kind fell back to a plain rectangle (a warning says so), choose another kind
-   from list_kinds and patch it with update_node.
-4. Fix with patch_diagram, one batch per pass: update_node (label, fill), add_node,
-   add_edge, remove (node, group or "source->target" edge), move (single shape),
-   relayout (new layout style for the whole page).
-5. Stop once it is presentable. Two passes is typical. After three, report what remains.
-Use inspect_diagram for exact positions and the overlap list of the open diagram.
-
-## 6. Tips
-- Keep the main flow in one direction; avoid long backward edges.
-- Prefer relayout over many move ops.
-- Use fill sparingly, to highlight one tier or the failing path.
-- Export png only unless the user asks for svg or pdf.
-
-## Example: a small web architecture
+## Example
 ```json
 {
-  "title": "Order service",
-  "layout": "flowchart-lr",
-  "groups": [{"id": "edge", "label": "Edge"}, {"id": "core", "label": "Core"}],
+  "title": "Orders Platform",
+  "subtitle": "Container view · v2",
+  "type": "architecture",
+  "groups": [
+    {"id": "edge", "label": "Edge", "kind": "tier"},
+    {"id": "core", "label": "Order Services", "kind": "system"},
+    {"id": "data", "label": "Data", "kind": "tier"}
+  ],
   "nodes": [
-    {"id": "user", "label": "Customer", "kind": "user"},
-    {"id": "web", "label": "Web app", "kind": "webapp", "group": "edge"},
-    {"id": "api", "label": "Orders API", "kind": "api", "group": "core"},
-    {"id": "db", "label": "Orders DB", "kind": "database", "group": "core"}
+    {"id": "customer", "label": "Customer", "kind": "user"},
+    {"id": "web", "label": "Storefront", "kind": "webapp", "technology": "Next.js", "group": "edge"},
+    {"id": "api", "label": "Orders API", "kind": "api", "technology": "Python / FastAPI",
+     "group": "core", "emphasis": true},
+    {"id": "worker", "label": "Fulfilment Worker", "kind": "service", "group": "core"},
+    {"id": "bus", "label": "Order Events", "kind": "queue", "technology": "Kafka", "group": "core"},
+    {"id": "db", "label": "Orders DB", "kind": "database", "technology": "PostgreSQL", "group": "data"}
   ],
   "edges": [
-    {"source": "user", "target": "web"},
-    {"source": "web", "target": "api", "label": "HTTPS"},
-    {"source": "api", "target": "db", "label": "SQL"}
+    {"source": "customer", "target": "web", "label": "HTTPS"},
+    {"source": "web", "target": "api", "label": "REST"},
+    {"source": "api", "target": "db", "label": "reads/writes"},
+    {"source": "api", "target": "bus", "label": "publishes", "style": "dashed"},
+    {"source": "bus", "target": "worker", "label": "consumes", "style": "dashed"}
   ]
 }
 ```
 """
 
 
-def diagram_prompt(subject: str, source: Literal["prompt", "repo"] = "prompt") -> str:
+def diagram_prompt(subject: str, source: Literal["prompt", "repo"] = "prompt", diagram_type: str = "auto") -> str:
     """Instructions for drawing `subject`, from a description or by exploring a repo."""
+    kind = "" if diagram_type == "auto" else f" as a {diagram_type} diagram"
+    rules = (
+        f"Call get_diagram_rules('{diagram_type}') for its conventions. "
+        if diagram_type != "auto" else "Pick the diagram type, then call get_diagram_rules(type). "
+    )
     if source == "repo":
         return (
-            f"Draw a Visio diagram of the repository {subject}.\n\n"
+            f"Draw a professional Visio diagram of the repository {subject}{kind}.\n\n"
             "First explore the repo and pick the view that answers the request:\n"
             "- Context and purpose: README, docs/, ADRs.\n"
-            "- Components: package boundaries and imports between them (src/ folders, modules, services).\n"
-            "- Deployment: docker-compose.yml, Kubernetes manifests, Helm charts, Terraform, Bicep.\n"
+            "- Components: package boundaries, entrypoints, imports between modules and services.\n"
+            "- Integrations: config and env files (DATABASE_URL, queue/topic names, service URLs).\n"
+            "- Deployment: docker-compose, Kubernetes manifests, Helm, Terraform, Bicep, CloudFormation.\n"
             "- Data model (ERD): ORM models, schema files, migrations.\n"
-            "- API map: routes, controllers, OpenAPI/Swagger files.\n\n"
-            "Note the nodes and edges you found, then follow the authoring guide. Call "
-            "get_authoring_guide if you have not read it yet: write one DiagramSpec, call "
-            "render_diagram once, and review with patch_diagram.\n"
+            "- Pipelines: .github/workflows, azure-pipelines.yml, .gitlab-ci.yml.\n\n"
+            "Only draw what the code shows. Then read get_authoring_guide. " + rules +
+            "Write one DiagramSpec, call render_diagram once, and review with patch_diagram.\n"
         )
     return (
-        f"Draw a Visio diagram of: {subject}\n\n"
-        "Follow the authoring guide. Call get_authoring_guide if you have not read it yet: "
-        "choose the layout, write one DiagramSpec, call render_diagram once, then review the "
-        "overlaps, warnings and preview and fix issues with patch_diagram.\n"
+        f"Draw a professional Visio diagram of: {subject}{kind}\n\n"
+        "Read get_authoring_guide if you have not yet. " + rules +
+        "Write one DiagramSpec, call render_diagram once, then review the overlaps, warnings, "
+        "suggestions and preview and fix them with patch_diagram.\n"
     )

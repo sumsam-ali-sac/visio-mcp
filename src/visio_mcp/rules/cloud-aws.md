@@ -1,0 +1,67 @@
+# Amazon Web Services conventions
+
+Follow the AWS Architecture Icons and their group guidelines: official icons, service
+names with the Amazon/AWS prefix as AWS writes them, and the standard group nesting.
+
+## Group hierarchy (outer to inner)
+| Scope | Group kind | Label example |
+|---|---|---|
+| AWS Cloud / account | `cloud` | `AWS Cloud`, `Prod Account` |
+| Region | `region` | `eu-west-1` or `Europe (Ireland)` |
+| VPC | `network` | `Shop VPC 10.0.0.0/16` |
+| Availability Zone | `zone` | `Availability Zone A` |
+| Public / private subnet | `subnet` | `Public Subnet`, `Private Subnet` |
+| EKS / ECS cluster, Auto Scaling group | `cluster` | `EKS Cluster` |
+
+- AWS nests AZs inside the VPC and subnets inside AZs: AWS Cloud > Region > VPC > AZ >
+  subnet. That is 5 levels: drop the AWS Cloud group or the AZ level unless the
+  diagram is about multi-AZ resilience (`[nesting]` allows 4).
+- AWS colors public subnets green and private subnets blue; name subnets `Public ...`
+  / `Private ...` so the reader (and the theme) can tell them apart.
+- Regional services outside the VPC: S3, DynamoDB, SQS, SNS, EventBridge, Lambda (when
+  not VPC-attached). Global/edge services outside the region: CloudFront, Route 53,
+  IAM, WAF (on CloudFront).
+
+## Kinds (provider-prefixed; confirm with `list_kinds`)
+- Compute: `aws-lambda`, `aws-ec2`, `aws-ecs`, `aws-fargate`, `aws-eks`.
+- Data: `aws-s3`, `aws-dynamodb`, `aws-rds`, `aws-aurora`, `aws-elasticache`,
+  `aws-redshift`, `aws-athena`, `aws-ecr`.
+- Integration: `aws-api-gateway`, `aws-sqs`, `aws-sns`, `aws-eventbridge`,
+  `aws-step-functions`, `aws-kinesis`, `aws-glue`.
+- Networking: `aws-cloudfront`, `aws-route53`, `aws-alb` (Elastic Load Balancing),
+  `aws-vpc`.
+- Security: `aws-iam`, `aws-cognito`, `aws-waf`, `aws-secrets-manager`, `aws-kms`.
+- AI: `aws-bedrock`, `aws-sagemaker`.
+- Operations: `aws-cloudwatch`.
+- Also: `aws-nat-gateway` (in a public subnet), `aws-opensearch`.
+- A service with no kind yet: use the generic kind (`gateway`, `search`, `service`)
+  and the official name in `technology`.
+
+## Naming
+Official names keep their prefix: `Amazon S3`, `Amazon DynamoDB`, `AWS Lambda`,
+`Amazon API Gateway`, `Elastic Load Balancing`, `Amazon Bedrock`. Use the role as the
+label when there are several (`Thumbnail Function`, technology `AWS Lambda`).
+
+## Reference patterns
+- **Web app + API + data**: Route 53 -> CloudFront -> S3 (static site) and API
+  Gateway -> Lambda -> DynamoDB; Cognito for sign-in.
+- **Containerized three-tier**: ALB in public subnets -> ECS/Fargate or EKS in private
+  subnets -> Aurora in isolated subnets, across 2 AZs; NAT gateway for egress.
+- **Event-driven**: producers -> EventBridge (events) or SQS (work queues) -> Lambda ->
+  DynamoDB; SNS fan-out; DLQ dashed.
+- **Data platform**: Kinesis/S3 landing -> Glue (ETL) -> S3 data lake -> Athena /
+  Redshift -> QuickSight.
+- **AI / RAG app**: client -> API Gateway -> Lambda -> Bedrock (generate) + OpenSearch
+  or Bedrock Knowledge Bases (retrieve); S3 documents -> ingestion Lambda ->
+  embeddings.
+
+## Edge labels
+`HTTPS`, `invokes`, `SQL`, `GetItem/PutItem` or `reads/writes`, `publishes` (SNS,
+EventBridge), `polls` (SQS -> Lambda), `S3 event`, `assumes role` (dotted).
+
+## Common mistakes
+- S3, DynamoDB or SQS drawn inside a subnet.
+- One subnet spanning two AZs (subnets live in exactly one AZ).
+- Missing NAT/Internet gateway on a diagram that claims private subnets reach the
+  internet.
+- Generic "Lambda" boxes instead of `aws-lambda`; `AWS S3` instead of `Amazon S3`.

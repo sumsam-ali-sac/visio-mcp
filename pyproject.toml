@@ -1,19 +1,29 @@
 [project]
 name = "visio-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server that drives Microsoft Visio to generate any diagram from a semantic spec"
 authors = [
     { name = "Sumsam Ali - Imperium Dynamics", email = "sumsam.ali@imperiumdynamics.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.1.0",
+    "google-genai>=2.32.0",
     "mcp[cli]>=2.3.0",
+    "openai>=3.37.0",
+    "prompt-toolkit>=3.0.53",
     "pydantic>=2.14.1",
-    "pywin32>=312",
+    "pywin32>=312; sys_platform == 'win32'",
+    "questionary>=2.1.1",
+    "rich>=15.0.0",
 ]
+
+[project.optional-dependencies]
+preview = ["playwright>=1.48"]  # PNG previews without Visio (then: playwright install chromium)
 
 [project.scripts]
 visio-mcp = "visio_mcp.server:main"
+visio-ai = "visio_mcp.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

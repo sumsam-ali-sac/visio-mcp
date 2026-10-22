@@ -1,0 +1,83 @@
+# Data flow
+
+**Use when:** you need to show where data comes from, how it is transformed and where it ends up (lineage, integration, privacy reviews).
+
+## Purpose
+A data flow diagram (DFD, in the Yourdon/DeMarco and threat-modeling tradition):
+sources, processes that transform data, stores and sinks, with the data named on every
+arrow. Used for integration design, analytics platforms, GDPR/privacy reviews and
+STRIDE threat models.
+
+## Spec settings
+- `"type": "dataflow"`, `"layout": "flowchart-lr"`: sources left, processing middle,
+  consumers right.
+- Theme `professional`.
+
+## Node kinds
+| Kind | Use for |
+|---|---|
+| `external`, `user` | External entities that produce or consume data. |
+| `process`, `etl`, `function` | Transformations: verb + data (`Cleanse Orders`). |
+| `queue` | Streams and topics carrying data in motion. |
+| `data-lake`, `data-warehouse`, `database`, `storage` | Data at rest: lake zones, warehouses, tables. |
+| `document`, `data` | Files and reports. |
+
+## Groups
+- `tier` groups for stages of a data platform: `Sources`, `Ingestion`, `Bronze`,
+  `Silver`, `Gold`, `Consumption`.
+- `boundary` for trust boundaries in threat models - every edge crossing one is a
+  place to ask about authentication and encryption.
+
+## Edges
+- Every edge names the data, not the call: `orders (CSV)`, `clickstream events`,
+  `customer PII`. Data names are the whole point (`[edge-labels]`).
+- Arrows point in the direction data moves (not who initiates).
+- `dashed` for streaming/event flows vs `solid` batch, and say so in the legend.
+- Mark sensitive flows with `emphasis` on the store or a note, not with many colors.
+
+## Checklist
+- [ ] Sources left, sinks right; every store has at least one writer and one reader
+- [ ] Every edge labeled with the data it carries
+- [ ] Processes are verbs; stores are nouns
+- [ ] Trust boundaries drawn where data crosses ownership or network zones
+- [ ] Batch vs stream distinguished by line style
+
+## Common mistakes
+- Labeling edges with protocols only ("HTTPS") - say what data flows.
+- Arrows pointing from reader to store (call direction) instead of data direction.
+- Write-only stores ("black holes") and processes with no output ("miracles").
+- Mixing control flow (decisions, retries) into a DFD.
+
+## Example
+```json
+{
+  "title": "Sales Analytics Data Flow",
+  "subtitle": "Daily batch + clickstream - v1.3",
+  "type": "dataflow",
+  "layout": "flowchart-lr",
+  "groups": [
+    {"id": "sources", "label": "Sources", "kind": "tier"},
+    {"id": "platform", "label": "Data Platform", "kind": "tier"},
+    {"id": "consume", "label": "Consumption", "kind": "tier"}
+  ],
+  "nodes": [
+    {"id": "erp", "label": "ERP", "kind": "external", "group": "sources"},
+    {"id": "web", "label": "Web Store", "kind": "webapp", "group": "sources"},
+    {"id": "stream", "label": "Clickstream Topic", "kind": "queue", "group": "platform", "technology": "Kafka"},
+    {"id": "ingest", "label": "Ingest Orders", "kind": "process", "group": "platform"},
+    {"id": "lake", "label": "Raw Zone", "kind": "data-lake", "group": "platform"},
+    {"id": "transform", "label": "Build Sales Model", "kind": "process", "group": "platform", "technology": "dbt"},
+    {"id": "dw", "label": "Sales Warehouse", "kind": "data-warehouse", "group": "platform"},
+    {"id": "bi", "label": "Sales Dashboard", "kind": "document", "group": "consume", "technology": "Power BI"}
+  ],
+  "edges": [
+    {"source": "erp", "target": "ingest", "label": "orders (CSV)"},
+    {"source": "web", "target": "stream", "label": "click events", "style": "dashed"},
+    {"source": "stream", "target": "lake", "label": "click events", "style": "dashed"},
+    {"source": "ingest", "target": "lake", "label": "raw orders"},
+    {"source": "lake", "target": "transform", "label": "orders, clicks"},
+    {"source": "transform", "target": "dw", "label": "sales facts"},
+    {"source": "dw", "target": "bi", "label": "KPIs"}
+  ]
+}
+```

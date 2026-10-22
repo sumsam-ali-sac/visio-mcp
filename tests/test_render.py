@@ -1,109 +1,119 @@
+"""Planning and drawing through the backend (FakeVisio records every call)."""
+
+import json
+from pathlib import Path
+
 import pytest
 
-from visio_mcp import catalog
 from visio_mcp.backend import ShapeInfo
-from visio_mcp.catalog import Resolved, Shape
+from visio_mcp.plan import build_plan
 from visio_mcp.render import find_overlaps, render_spec
 from visio_mcp.spec import DiagramSpec, Edge, Group, Node
 
-PROCESS = Shape("BASFLO_U.VSSX", "Process")
-DECISION = Shape("BASFLO_U.VSSX", "Decision")
-RECT = Shape("BASIC_U.VSSX", "Rectangle")
-
-
-@pytest.fixture(autouse=True)
-def fake_catalog(monkeypatch):
-    def resolve(kind, has_master):
-        if kind == "decision":
-            return Resolved(DECISION, "#FFF2CC", None)
-        if kind == "mystery":
-            return Resolved(RECT, None, "unknown kind 'mystery', used Rectangle")
-        return Resolved(PROCESS, None, None)
-
-    monkeypatch.setattr(catalog, "resolve", resolve)
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def box(name, x, y, w=1.0, h=1.0, **kw):
     return ShapeInfo(name, name, "Process", x, y, w, h, **kw)
 
 
-def test_full_render(fake):
-    spec = DiagramSpec(
-        title="Flow",
-        layout="flowchart-lr",
-        nodes=[
-            Node(id="a", label="Start"),
-            Node(id="b", kind="decision", group="g"),
-            Node(id="c", group="g", fill="#112233"),
-            Node(id="d", kind="mystery"),
-        ],
-        edges=[
-            Edge(source="a", target="b", label="go", style="dashed", arrow="both"),
-            Edge(source="b", target="c"),
-        ],
-        groups=[Group(id="g", label="Zone")],
-    )
-    result = render_spec(fake, spec)
+SPEC = DiagramSpec(
+    title="orders platform",
+    subtitle="Container view",
+    type="architecture",
+    groups=[Group(id="core", label="core services", kind="system"), Group(id="data", kind="tier")],
+    nodes=[
+        Node(id="user", label="customer", kind="user"),
+        Node(id="api", label="orders api", kind="api", technology="Python / FastAPI", group="core", emphasis=True),
+        Node(id="bus", label="order events", kind="queue", group="core"),
+        Node(id="db", label="orders db", kind="database", group="data"),
+    ],
+    edges=[
+        Edge(source="user", target="api", label="HTTPS"),
+        Edge(source="api", target="db", label="Reads From"),
+        Edge(source="api", target="bus", label="publishes", style="dashed"),
+    ],
+)
 
-    assert fake.title == "Flow"
-    assert fake.layouts == ["flowchart-lr"]
-    assert (result.shapes, result.connectors) == (5, 2)
-    assert result.warnings == ["unknown kind 'mystery', used Rectangle"]
-    assert fake.items["a"].text == "Start"
-    assert fake.items["b"].text == "b"
-    assert fake.items["b"].master == "Decision"
-    assert fake.fills == {"b": "#FFF2CC", "c": "#112233"}
-    assert fake.edges["a->b"] == dict(
-        source="a", target="b", label="go", pattern="dashed", arrow="both"
-    )
-    assert fake.containers == {"g": ["b", "c"]}
-    assert fake.items["g"].text == "Zone"
+
+def test_full_render_draws_everything(fake):
+    result = render_spec(fake, SPEC)
+    assert fake.title == "orders platform"
+    assert (result.shapes, result.connectors) == (6, 3)
     assert result.overlaps == []
+    # nodes are styled with rich text: cased label, then the technology line
+    assert fake.items["api"].text.startswith("Orders API\n[Python / FastAPI]")
+    assert fake.runs["api"][0].style.bold
+    # emphasis thickens the border in the theme accent
+    assert fake.styles["api"]["style"].line_weight >= 2.0
+    # containers with exact bounds, members included, cased labels
+    assert fake.containers["core"] == ["api", "bus"]
+    assert fake.items["core"].text == "Core Services"
+    assert fake.container_bounds["core"] is not None
+    # connectors glued and styled; edge labels read as phrases
+    assert fake.edges["api->db"]["label"] == "reads from"
+    assert fake.edges["api->bus"]["pattern"] == "dashed"
+    assert set(fake.edge_styles) == {"user->api", "api->db", "api->bus"}
+    # page, title block and presentation
+    assert fake.page["background"] == "#FFFFFF"
+    assert "__title" in fake.texts
+    assert fake.presented == 1
 
 
-def test_group_members_are_adjacent(fake):
+def test_containers_are_drawn_inner_first(fake):
     spec = DiagramSpec(
-        nodes=[Node(id="a", group="g"), Node(id="x"), Node(id="b", group="g")],
-        groups=[Group(id="g")],
+        nodes=[Node(id="a", group="subnet")],
+        groups=[Group(id="cloud", kind="cloud"), Group(id="vnet", kind="network", parent="cloud"),
+                Group(id="subnet", kind="subnet", parent="vnet")],
     )
     render_spec(fake, spec)
-    assert list(fake.items)[:3] == ["a", "b", "x"]
-    assert fake.containers["g"] == ["a", "b"]
+    order = [n for n in fake.containers]
+    assert order == ["subnet", "vnet", "cloud"]
+    assert fake.containers["vnet"] == ["subnet"]
 
 
-def test_duplicate_edge_names(fake):
-    spec = DiagramSpec(
-        nodes=[Node(id="a"), Node(id="b")],
-        edges=[Edge(source="a", target="b"), Edge(source="a", target="b"), Edge(source="a", target="b")],
-    )
-    result = render_spec(fake, spec)
-    assert list(fake.edges) == ["a->b", "a->b#2", "a->b#3"]
-    assert result.connectors == 3
+def test_theme_drives_styles(fake):
+    render_spec(fake, SPEC.model_copy(update={"theme": "blueprint"}))
+    assert fake.page["background"] == "#0B1F3A"
+    assert fake.styles["db"]["style"].fill == "#12305A"
 
 
-def test_layout_none_uses_given_coordinates(fake):
-    spec = DiagramSpec(
-        layout="none",
-        nodes=[Node(id="a", x=5, y=6), Node(id="b"), Node(id="c", x=1, y=1), Node(id="d")],
-    )
-    result = render_spec(fake, spec)
-    assert (fake.items["a"].x, fake.items["a"].y) == (5, 6)
-    assert (fake.items["c"].x, fake.items["c"].y) == (1, 1)
-    assert fake.layouts == ["none"]
-    assert result.overlaps == []  # unplaced nodes avoid the fixed ones and each other
-
-
-def test_empty_group_warns_and_is_skipped(fake):
-    spec = DiagramSpec(nodes=[Node(id="a")], groups=[Group(id="empty")])
-    result = render_spec(fake, spec)
-    assert "empty" not in fake.items
-    assert result.shapes == 1
-    assert any("'empty'" in w for w in result.warnings)
-
-
-def test_warnings_deduped(fake):
+def test_unknown_kind_warns_and_draws(fake):
     spec = DiagramSpec(nodes=[Node(id="a", kind="mystery"), Node(id="b", kind="mystery")])
-    assert len(render_spec(fake, spec).warnings) == 1
+    result = render_spec(fake, spec)
+    assert len([w for w in result.warnings if "mystery" in w]) == 1  # deduped
+    assert "a" in fake.items
+
+
+def test_legend_lists_categories_and_line_styles(fake):
+    render_spec(fake, SPEC)
+    legend = " ".join(t["runs"][0].text for name, t in fake.texts.items() if name.startswith("__legend_"))
+    assert "Synchronous call" in legend and "Asynchronous / event" in legend
+    assert "__legend" in fake.boxes
+
+
+def test_no_legend_when_disabled(fake):
+    render_spec(fake, SPEC.model_copy(update={"legend": False}))
+    assert not any(n.startswith("__legend") for n in fake.boxes)
+
+
+def test_progress_messages(fake):
+    seen = []
+    render_spec(fake, SPEC, seen.append)
+    assert any("shapes" in m for m in seen) and any("Connecting" in m for m in seen)
+
+
+@pytest.mark.parametrize("path", sorted((ROOT / "examples").glob("*.json")), ids=lambda p: p.stem)
+def test_examples_plan_cleanly(path):
+    plan = build_plan(DiagramSpec.model_validate(json.loads(path.read_text(encoding="utf-8"))))
+    rects = [n.rect for n in plan.nodes]
+    for i, a in enumerate(rects):
+        for b in rects[i + 1:]:
+            assert abs(a.x - b.x) >= (a.w + b.w) / 2 - 1e-6 or abs(a.y - b.y) >= (a.h + b.h) / 2 - 1e-6
+    for n in plan.nodes:
+        assert 0 <= n.rect.left and n.rect.right <= plan.width
+        assert 0 <= n.rect.bottom and n.rect.top <= plan.height
+    assert not [w for w in plan.warnings if "no members" in w]
 
 
 def test_find_overlaps_detects_intersection():
@@ -115,10 +125,11 @@ def test_find_overlaps_touching_does_not_count():
     assert find_overlaps([box("a", 0, 0), box("b", 1, 0), box("c", 0, 1)]) == []
 
 
-def test_find_overlaps_ignores_connectors_and_containers():
+def test_find_overlaps_ignores_connectors_containers_and_decorations():
     shapes = [
         box("a", 0, 0),
         box("e", 0, 0, is_connector=True),
         box("g", 0, 0, 5, 5, is_container=True),
+        box("__background", 0, 0, 50, 50),
     ]
     assert find_overlaps(shapes) == []

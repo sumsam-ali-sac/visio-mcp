@@ -1,0 +1,74 @@
+# Org chart
+
+**Use when:** you need reporting lines: who reports to whom in a team, department or company.
+
+## Purpose
+A hierarchy of positions and reporting lines. It answers "who leads what and who
+reports to whom?" for HR, onboarding and change programs.
+
+## Spec settings
+- `"type": "org"`, `"layout": "tree-tb"` (root on top). `tree-lr` for very wide,
+  shallow orgs.
+- Theme `professional`; `legend: false` is fine (shapes are obvious).
+
+## Node kinds
+| Kind | Use for |
+|---|---|
+| `executive` | The root and C-level/VP positions. |
+| `manager` | People managers and team leads. |
+| `position` | Individual contributors, vacancies, contractors. |
+
+- Label = person name, or `Open Role` for a vacancy. Put the job title in
+  `description` (`VP Engineering`), not in the label or `technology`. Keep names
+  as people write them.
+- One node per person. Teams of many ICs: one `position` node `Engineers x12`.
+
+## Groups
+Optional `generic` groups for departments or locations; one level only. A group must
+not cut across reporting lines.
+
+## Edges
+- One edge per reporting line, manager -> report. No labels needed.
+- Dotted-line (matrix) reporting: `style: "dotted"`, labeled `dotted line`.
+- Each node has exactly one solid manager edge (except the root).
+
+## Checklist
+- [ ] One root
+- [ ] Every non-root node has exactly one solid incoming edge
+- [ ] Job titles in description; names as labels
+- [ ] 3 levels deep at most per page; split large orgs by department
+- [ ] Vacancies marked (`Open Role`) and contractors described as such
+
+## Common mistakes
+- Using flowchart arrows between peers.
+- Several roots on one page without a shared head.
+- Drawing 40 ICs individually instead of summarizing.
+- Matrix lines drawn solid, so the chart lies about who manages whom.
+
+## Example
+```json
+{
+  "title": "Engineering Organization",
+  "subtitle": "As of Oct 2026",
+  "type": "org",
+  "layout": "tree-tb",
+  "legend": false,
+  "nodes": [
+    {"id": "cto", "label": "Dana Kim", "kind": "executive", "description": "CTO"},
+    {"id": "platform", "label": "Luis Ortega", "kind": "manager", "description": "Head of Platform"},
+    {"id": "product", "label": "Amira Haddad", "kind": "manager", "description": "Head of Product Engineering"},
+    {"id": "sre", "label": "SRE Team x5", "kind": "position", "description": "Site reliability"},
+    {"id": "infra", "label": "Open Role", "kind": "position", "description": "Staff Infrastructure Engineer"},
+    {"id": "web", "label": "Web Team x8", "kind": "position", "description": "Storefront and admin"},
+    {"id": "mobile", "label": "Mobile Team x4", "kind": "position", "description": "iOS and Android"}
+  ],
+  "edges": [
+    {"source": "cto", "target": "platform"},
+    {"source": "cto", "target": "product"},
+    {"source": "platform", "target": "sre"},
+    {"source": "platform", "target": "infra"},
+    {"source": "product", "target": "web"},
+    {"source": "product", "target": "mobile"}
+  ]
+}
+```

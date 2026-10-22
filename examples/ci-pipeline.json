@@ -1,6 +1,7 @@
 {
   "title": "CI pipeline",
-  "layout": "flowchart-tb",
+  "subtitle": "Main branch · build to production",
+  "type": "flowchart",
   "nodes": [
     {"id": "start", "label": "Push to main", "kind": "start"},
     {"id": "build", "label": "Build", "kind": "process"},
