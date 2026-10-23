@@ -60,6 +60,18 @@ def test_doctor_runs(capsys, monkeypatch, tmp_path):
     assert "Visio desktop" in out and "AI provider" in out
 
 
+def test_doctor_accepts_azure_sign_in_without_a_key(capsys, monkeypatch, tmp_path):
+    from visio_mcp.ai import config
+
+    monkeypatch.setattr(config, "CONFIG_PATH", tmp_path / "config.toml")
+    monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
+    config.save_config(config.AppConfig(provider=config.ProviderConfig(
+        "azure", "gpt", endpoint="https://res.openai.azure.com", deployment="gpt")))
+    code, out = run(capsys, "doctor")
+    assert code == 0
+    assert "Azure sign-in (Entra ID)" in out and "API key missing" not in out
+
+
 def test_render_native_writes_a_vsdx(capsys, tmp_path):
     spec = Path(__file__).resolve().parents[2] / "examples" / "ci-pipeline.json"
     code, out = run(capsys, "render", str(spec), "--native", "--no-open", "--out", str(tmp_path / "r"))

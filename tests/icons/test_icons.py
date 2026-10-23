@@ -162,3 +162,59 @@ def test_every_cloud_kind_maps_to_an_icon_in_diagrams_pack(tmp_path, make_zip):
             report.append(f"{k.name} -> {key} ({how})")
     print("\npoorly mapped:", report or "none")
     assert missing == []
+
+
+def test_install_closes_every_zip_before_cleanup(tmp_path, monkeypatch, make_zip, diagrams_names):
+    """On Windows an open zip can't be deleted (WinError 32): nothing may stay open."""
+    import io
+    import zipfile
+
+    from visio_mcp.icons import pack
+
+    inner = io.BytesIO()
+    with zipfile.ZipFile(inner, "w") as z:
+        for name in diagrams_names:
+            z.writestr(name, b"\x89PNG\r\n\x1a\n")
+    outer = tmp_path / "vendor.zip"
+    with zipfile.ZipFile(outer, "w") as z:
+        z.writestr("icons/inner.zip", inner.getvalue())
+
+    opened: list[zipfile.ZipFile] = []
+    real = zipfile.ZipFile
+
+    class Tracked(real):  # type: ignore[misc, valid-type]
+        def __init__(self, *a, **kw):
+            super().__init__(*a, **kw)
+            opened.append(self)
+
+    monkeypatch.setattr(sources.zipfile, "ZipFile", Tracked)
+    monkeypatch.setattr(pack.zipfile, "ZipFile", Tracked)
+    assert icons.install(source=str(outer))
+    assert len(opened) >= 2  # the outer zip and the nested one
+    assert all(z.fp is None for z in opened), "a zip was left open"
+
+
+def test_install_ignores_temp_cleanup_errors(tmp_path, monkeypatch, make_zip, diagrams_names):
+    """A file still locked in the temp folder (antivirus, indexer) must not fail a finished install."""
+    import sys
+
+    install_mod = sys.modules["visio_mcp.icons.install"]  # the package re-exports a function named install
+    real = install_mod.tempfile.TemporaryDirectory
+
+    class LockedOnCleanup:
+        def __init__(self, **kw):
+            self.ignore = kw.get("ignore_cleanup_errors", False)
+            self.inner = real(**kw)
+
+        def __enter__(self):
+            return self.inner.__enter__()
+
+        def __exit__(self, *exc):
+            self.inner.__exit__(*exc)
+            if not self.ignore:
+                raise PermissionError(32, "The process cannot access the file because it is being used")
+            return False
+
+    monkeypatch.setattr(install_mod.tempfile, "TemporaryDirectory", LockedOnCleanup)
+    src = make_zip(tmp_path / "diagrams-1.0-py3-none-any.whl", diagrams_names)
+    assert icons.install(source=str(src))

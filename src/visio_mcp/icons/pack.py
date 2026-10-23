@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import zipfile
 from collections.abc import Callable, Iterator
+from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -23,7 +24,9 @@ MAX_ICON_BYTES = 2_000_000
 Entry = tuple[str, Callable[[], bytes]]  # (path inside the source, reader)
 
 
-def zip_entries(z: zipfile.ZipFile, prefix: str = "", depth: int = 0) -> Iterator[Entry]:
+def zip_entries(z: zipfile.ZipFile, prefix: str = "", depth: int = 0,
+                opened: ExitStack | None = None) -> Iterator[Entry]:
+    """Image entries in a zip (and zips nested in it). Readers stay valid until `opened` closes."""
     for info in z.infolist():
         name = info.filename
         if info.is_dir() or "__MACOSX" in name or Path(name).name.startswith("."):
@@ -34,7 +37,9 @@ def zip_entries(z: zipfile.ZipFile, prefix: str = "", depth: int = 0) -> Iterato
                 inner = zipfile.ZipFile(io.BytesIO(z.read(info)))
             except (zipfile.BadZipFile, OSError):
                 continue
-            yield from zip_entries(inner, prefix + name + "/", depth + 1)
+            if opened is not None:
+                opened.enter_context(inner)
+            yield from zip_entries(inner, prefix + name + "/", depth + 1, opened)
         elif low.endswith(IMAGE_EXTS) and info.file_size <= MAX_ICON_BYTES:
             yield prefix + name, (lambda z=z, info=info: z.read(info))
 

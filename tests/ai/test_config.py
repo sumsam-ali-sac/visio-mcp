@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from visio_mcp.ai import config as cfgmod
 
 
@@ -88,3 +90,43 @@ def test_config_dir_platforms(monkeypatch, tmp_path):
     assert cfgmod._config_dir() == tmp_path / "AppData" / "visio-mcp"
     monkeypatch.setattr(cfgmod.sys, "platform", "darwin")
     assert cfgmod._config_dir() == Path.home() / "Library" / "Application Support" / "visio-mcp"
+
+
+# ---------------------------------------------------------------- Azure endpoint and sign-in
+
+
+@pytest.mark.parametrize("url", [
+    "https://res.openai.azure.com",
+    "https://res.openai.azure.com/",
+    "https://res.openai.azure.com/openai/v1",
+    "https://res.openai.azure.com/openai/v1/",
+    "https://res.openai.azure.com/openai/deployments/gpt/chat/completions?api-version=2025-04-01-preview",
+    "res.openai.azure.com/openai/v1",
+])
+def test_azure_endpoint_root(url):
+    assert cfgmod.azure_endpoint_root(url) == "https://res.openai.azure.com"
+
+
+def test_azure_endpoint_root_empty():
+    assert cfgmod.azure_endpoint_root("") is None and cfgmod.azure_endpoint_root(None) is None
+
+
+def test_key_source(monkeypatch):
+    monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
+    azure = cfgmod.ProviderConfig("azure", "dep", endpoint="https://res.openai.azure.com")
+    assert cfgmod.key_source(azure) == "Azure sign-in (Entra ID)"
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "k")
+    assert cfgmod.key_source(azure) == "$AZURE_OPENAI_API_KEY"
+    assert cfgmod.key_source(cfgmod.ProviderConfig("anthropic", "m", api_key="x")) == "saved key"
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert cfgmod.key_source(cfgmod.ProviderConfig("anthropic", "m")) == "missing"
+
+
+def test_azure_detected_from_endpoint_alone(monkeypatch):
+    for var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "AZURE_OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://res.openai.azure.com/openai/v1/")
+    monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt")
+    found = cfgmod.detect_providers(probe_ollama=False)
+    assert [p.provider for p in found] == ["azure"]
+    assert found[0].endpoint == "https://res.openai.azure.com" and found[0].deployment == "gpt"

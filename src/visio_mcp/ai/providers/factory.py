@@ -27,9 +27,7 @@ def make_llm(cfg: ProviderConfig) -> LLM:
         endpoint = cfg.endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
         deployment = cfg.deployment or cfg.model or os.environ.get("AZURE_OPENAI_DEPLOYMENT")
         version = cfg.api_version or os.environ.get("AZURE_OPENAI_API_VERSION")
-        if not key:
-            raise LLMError("No Azure OpenAI API key found.", "run visio-ai setup or set AZURE_OPENAI_API_KEY", "auth")
-        if not endpoint or not deployment:
+        if not endpoint or not deployment:  # no key is fine: Azure sign-in (Entra ID) is used instead
             raise LLMError("Azure OpenAI needs an endpoint and a deployment name.",
                            "run visio-ai setup or set AZURE_OPENAI_ENDPOINT / AZURE_OPENAI_DEPLOYMENT", "error")
         return OpenAILLM.azure(deployment, endpoint, key, version, effort=cfg.effort)
