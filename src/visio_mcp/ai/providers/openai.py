@@ -5,16 +5,30 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..config import DEFAULT_AZURE_API_VERSION, ollama_base
+from ..config import DEFAULT_AZURE_API_VERSION, azure_endpoint_root, ollama_base
 from .base import Reply, ToolCall, ToolDef, ToolResult, new_call_id
 from .errors import SETUP_HINT, LLMError, call_with_retries, short_message
 
+AZURE_SCOPE = "https://cognitiveservices.azure.com/.default"
+AZURE_SIGN_IN_HINT = ("run `az login` (and `az account set --subscription ...` for the right tenant), and make sure "
+                      "your account has the 'Cognitive Services OpenAI User' role on the Azure OpenAI resource")
+# Credential errors from azure-identity, matched by name so the package stays optional for other providers.
+SIGN_IN_ERRORS = ("ClientAuthenticationError", "CredentialUnavailableError")
 
-def classify_error(exc: BaseException, provider: str, model: str) -> LLMError | None:
+
+def classify_error(exc: BaseException, provider: str, model: str, signed_in: bool = False) -> LLMError | None:
     import openai
 
     who = {"azure": "Azure OpenAI", "ollama": "Ollama"}.get(provider, "OpenAI")
+    if type(exc).__name__ in SIGN_IN_ERRORS:
+        return LLMError("Could not get an Azure sign-in token.", AZURE_SIGN_IN_HINT, "auth")
     if isinstance(exc, (openai.AuthenticationError, openai.PermissionDeniedError)):
+        if provider == "azure" and signed_in:
+            return LLMError("Azure OpenAI rejected your Azure sign-in.", AZURE_SIGN_IN_HINT, "auth")
+        if provider == "azure":
+            return LLMError("Azure OpenAI rejected the API key.",
+                            "if key access is disabled on the resource, leave the key empty in visio-ai setup "
+                            "to use your Azure sign-in (az login)", "auth")
         return LLMError(f"{who} rejected the API key.", SETUP_HINT, "auth")
     if isinstance(exc, openai.RateLimitError):
         return LLMError(f"{who} rate limit reached; try again shortly.", "wait a minute", "rate_limit")
@@ -37,6 +51,14 @@ def classify_error(exc: BaseException, provider: str, model: str) -> LLMError | 
     return None
 
 
+def reasoning_rejects_tools(exc: BaseException | None) -> bool:
+    """A 400 saying this reasoning model can't use function tools at the requested reasoning effort."""
+    if getattr(exc, "status_code", None) != 400:
+        return False
+    text = short_message(exc, 2000).lower()
+    return "reasoning" in text and ("tool" in text or "function" in text)
+
+
 FINISH = {"tool_calls": "tool_use", "function_call": "tool_use", "stop": "end_turn", "length": "max_tokens",
            "content_filter": "refusal"}
 
@@ -57,6 +79,7 @@ class OpenAILLM:
         self.client = client
         self.effort = effort
         self.max_tokens = max_tokens
+        self.signed_in = False  # Azure: authenticating with an Entra ID token instead of a key
 
     @classmethod
     def openai(cls, model: str, api_key: str | None, effort: str | None = None) -> OpenAILLM:
@@ -68,15 +91,20 @@ class OpenAILLM:
     def azure(
         cls, deployment: str, endpoint: str, api_key: str | None, api_version: str | None, effort: str | None = None
     ) -> OpenAILLM:
+        """Azure OpenAI with an API key, or with the user's Azure sign-in when there is no key
+        (az login, VS Code, managed identity) for resources that have key access disabled."""
         import openai
 
+        auth: dict[str, Any] = {"api_key": api_key} if api_key else {"azure_ad_token_provider": entra_token_provider()}
         client = openai.AzureOpenAI(
-            azure_endpoint=endpoint,
+            azure_endpoint=azure_endpoint_root(endpoint) or endpoint,
             api_version=api_version or DEFAULT_AZURE_API_VERSION,
-            api_key=api_key,
             max_retries=1,
+            **auth,
         )
-        return cls(deployment, client, "azure", effort)
+        llm = cls(deployment, client, "azure", effort)
+        llm.signed_in = not api_key
+        return llm
 
     @classmethod
     def ollama(cls, model: str, base_url: str | None = None) -> OpenAILLM:
@@ -91,11 +119,22 @@ class OpenAILLM:
         return OpenAISession(self, system, tools)
 
 
+def entra_token_provider() -> Any:
+    """A bearer-token callable from the user's Azure sign-in (DefaultAzureCredential)."""
+    try:
+        from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+    except ImportError as exc:
+        raise LLMError("Azure sign-in needs the azure-identity package.",
+                       "reinstall visio-mcp, or set an API key in visio-ai setup", "auth") from exc
+    return get_bearer_token_provider(DefaultAzureCredential(), AZURE_SCOPE)
+
+
 class OpenAISession:
     """History is the native chat messages list (system, user, assistant with tool_calls, tool)."""
 
     def __init__(self, llm: OpenAILLM, system: str, tools: list[ToolDef]):
         self.llm = llm
+        self.effort_override: str | None = None  # set once a reasoning model rejects tools at its default effort
         self.messages: list[dict] = [{"role": "system", "content": system}]
         # Not strict mode: the spec schema has optional fields and $defs.
         self.tools = [
@@ -124,16 +163,28 @@ class OpenAISession:
             kw["tool_choice"] = "auto"
         if self.llm.max_tokens and self.llm.name in ("openai", "azure"):
             kw["max_completion_tokens"] = self.llm.max_tokens
-        if self.llm.effort and self.llm.name in ("openai", "azure"):
-            kw["reasoning_effort"] = self.llm.effort
+        effort = self.effort_override or self.llm.effort
+        if effort and self.llm.name in ("openai", "azure"):
+            kw["reasoning_effort"] = effort
         return kw
 
-    def _call(self) -> Reply:
+    def _create(self) -> Any:
         kw = self.request_kwargs()
-        resp = call_with_retries(
+        return call_with_retries(
             lambda: self.llm.client.chat.completions.create(**kw),
-            lambda e: classify_error(e, self.llm.name, self.llm.model),
+            lambda e: classify_error(e, self.llm.name, self.llm.model, self.llm.signed_in),
         )
+
+    def _call(self) -> Reply:
+        try:
+            resp = self._create()
+        except LLMError as err:
+            # Some reasoning models refuse function tools unless reasoning is off: retry once with
+            # reasoning_effort "none" and keep it for the rest of this session.
+            if self.effort_override or not self.tools or not reasoning_rejects_tools(err.__cause__):
+                raise
+            self.effort_override = "none"
+            resp = self._create()
         if not getattr(resp, "choices", None):
             raise LLMError(f"{self.llm.name} returned no choices.", "", "error")
         choice = resp.choices[0]

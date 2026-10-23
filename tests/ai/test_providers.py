@@ -316,3 +316,106 @@ def test_make_llm_anthropic(monkeypatch):
     monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: seen.update(kw) or object())
     llm = prov.make_llm(cfgmod.ProviderConfig("anthropic", "claude-opus-5-5", api_key="sk-x"))
     assert seen["api_key"] == "sk-x" and llm.effort == "high" and llm.model == "claude-opus-5-5"
+
+
+# ---------------------------------------------------------------- Azure sign-in (Entra ID)
+
+
+def _azure_recorder(monkeypatch):
+    import openai
+
+    made: list[dict] = []
+
+    def rec(**kw):
+        made.append(kw)
+        return FakeOpenAIClient([])
+
+    monkeypatch.setattr(openai, "AzureOpenAI", rec)
+    return made
+
+
+def test_azure_without_key_uses_entra_sign_in(monkeypatch):
+    made = _azure_recorder(monkeypatch)
+    monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
+    token = object()
+    monkeypatch.setattr(prov.openai, "entra_token_provider", lambda: token)
+    llm = prov.make_llm(cfgmod.ProviderConfig("azure", "", endpoint="https://e.openai.azure.com/openai/v1/",
+                                              deployment="dep"))
+    kw = made[-1]
+    assert kw["azure_ad_token_provider"] is token and "api_key" not in kw
+    assert kw["azure_endpoint"] == "https://e.openai.azure.com"  # the portal's /openai/v1 URL is normalized
+    assert llm.signed_in
+
+
+def test_azure_with_key_does_not_sign_in(monkeypatch):
+    made = _azure_recorder(monkeypatch)
+    monkeypatch.setattr(prov.openai, "entra_token_provider", lambda: pytest.fail("no sign-in with a key"))
+    llm = prov.make_llm(cfgmod.ProviderConfig("azure", "", api_key="k", endpoint="https://e.openai.azure.com",
+                                              deployment="dep"))
+    assert made[-1]["api_key"] == "k" and not llm.signed_in
+
+
+def test_azure_sign_in_errors_point_to_az_login(monkeypatch):
+    import openai
+
+    monkeypatch.setattr(prov_errors, "sleep", lambda s: None)
+
+    class ClientAuthenticationError(Exception):  # azure.core's credential error, matched by name
+        pass
+
+    llm = prov.OpenAILLM("dep", FakeOpenAIClient([ClientAuthenticationError("no account")]), "azure")
+    llm.signed_in = True
+    with pytest.raises(LLMError) as ei:
+        llm.start("s", []).send_user("x")
+    assert ei.value.kind == "auth" and "az login" in ei.value.hint
+    assert "Cognitive Services OpenAI User" in ei.value.hint
+
+    llm = prov.OpenAILLM("dep", FakeOpenAIClient([openai.PermissionDeniedError("no", response=_http(403), body=None)]),
+                         "azure")
+    llm.signed_in = True
+    with pytest.raises(LLMError) as ei:
+        llm.start("s", []).send_user("x")
+    assert "sign-in" in ei.value.message and "Cognitive Services OpenAI User" in ei.value.hint
+
+    keyed = prov.OpenAILLM("dep", FakeOpenAIClient([openai.AuthenticationError("bad", response=_http(401), body=None)]),
+                           "azure")
+    with pytest.raises(LLMError) as ei:
+        keyed.start("s", []).send_user("x")
+    assert "API key" in ei.value.message and "az login" in ei.value.hint
+
+
+# ---------------------------------------------------------------- reasoning models and function tools
+
+
+def _bad_request(msg: str):
+    import openai
+
+    return openai.BadRequestError(msg, response=_http(400), body=None)
+
+
+def test_reasoning_model_rejecting_tools_retries_without_reasoning(monkeypatch):
+    err = _bad_request("Function tools with reasoning_effort are not supported for gpt-6-luna in /v1/chat/completions.")
+    client = FakeOpenAIClient([err, _ocomp("first", None, "stop"), _ocomp("second", None, "stop")])
+    s = prov.OpenAILLM("gpt-6-luna", client, "azure").start("s", [ToolDef("t", "d", {"type": "object"})])
+    assert s.send_user("x").text == "first"
+    assert "reasoning_effort" not in client.requests[0]
+    assert client.requests[1]["reasoning_effort"] == "none"
+    assert s.send_user("y").text == "second"
+    assert client.requests[2]["reasoning_effort"] == "none"  # remembered for the session
+
+
+def test_other_bad_requests_are_not_retried():
+    client = FakeOpenAIClient([_bad_request("messages[1].content is too long")])
+    s = prov.OpenAILLM("gpt-6-luna", client, "azure").start("s", [ToolDef("t", "d", {"type": "object"})])
+    with pytest.raises(LLMError) as ei:
+        s.send_user("x")
+    assert ei.value.kind == "bad_request" and len(client.requests) == 1
+
+
+def test_reasoning_retry_happens_once():
+    err = "Function tools with reasoning_effort are not supported for this model."
+    client = FakeOpenAIClient([_bad_request(err), _bad_request(err)])
+    s = prov.OpenAILLM("m", client, "openai", effort="high").start("s", [ToolDef("t", "d", {"type": "object"})])
+    with pytest.raises(LLMError):
+        s.send_user("x")
+    assert [r.get("reasoning_effort") for r in client.requests] == ["high", "none"]

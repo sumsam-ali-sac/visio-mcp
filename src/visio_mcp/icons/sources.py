@@ -7,6 +7,7 @@ import json
 import re
 import urllib.request
 import zipfile
+from contextlib import ExitStack
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -83,27 +84,31 @@ def pypi_wheel(say: Progress, tmp: Path) -> Path:
     return dest
 
 
-def entries_from(source: str, say: Progress, tmp: Path) -> tuple[list[Entry], str]:
-    """Open a URL / zip / folder (or 'pypi') and list its image entries. Returns (entries, label)."""
+def entries_from(source: str, say: Progress, tmp: Path, opened: ExitStack) -> tuple[list[Entry], str]:
+    """Open a URL / zip / folder (or 'pypi') and list its image entries. Returns (entries, label).
+
+    Every zip opened is registered with `opened`; the caller closes them all before deleting `tmp`
+    (Windows can't delete a file that is still open).
+    """
     if source == "pypi":
         wheel = pypi_wheel(say, tmp)
-        z = zipfile.ZipFile(wheel)
-        return list(zip_entries(z)), "pypi:diagrams (" + wheel.name + ")"
+        z = opened.enter_context(zipfile.ZipFile(wheel))
+        return list(zip_entries(z, opened=opened)), "pypi:diagrams (" + wheel.name + ")"
     if re.match(r"^https?://", source, re.IGNORECASE):
         say(f"Downloading {Path(source.split('?')[0]).name}")
         dest = tmp / (hashlib.sha1(source.encode()).hexdigest()[:12] + ".zip")
         if not dest.exists():
             download(source, dest, say)
-        z = zipfile.ZipFile(dest)
-        return list(zip_entries(z)), source
+        z = opened.enter_context(zipfile.ZipFile(dest))
+        return list(zip_entries(z, opened=opened)), source
     p = Path(source).expanduser()
     if p.is_dir():
         return list(dir_entries(p)), str(p.resolve())
     if p.is_file():
         if p.suffix.lower() in IMAGE_EXTS:
             return [(p.name, lambda p=p: p.read_bytes())], str(p.resolve())
-        z = zipfile.ZipFile(p)
-        return list(zip_entries(z)), str(p.resolve())
+        z = opened.enter_context(zipfile.ZipFile(p))
+        return list(zip_entries(z, opened=opened)), str(p.resolve())
     raise FileNotFoundError(f"no such file or folder: {source}")
 
 

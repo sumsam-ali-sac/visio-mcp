@@ -26,12 +26,20 @@ def setup_wizard(cfg: Any) -> Any:
                                                           model=config.DEFAULT_MODELS.get(provider, ""))
 
     if provider == "azure":
-        pc.endpoint = prompts.text("Azure OpenAI endpoint", default=pc.endpoint or "https://<resource>.openai.azure.com")
+        typed = prompts.text("Azure OpenAI endpoint", default=pc.endpoint or "https://<resource>.openai.azure.com",
+                             instruction="(the portal's …/openai/v1 URL works too)")
+        pc.endpoint = config.azure_endpoint_root(typed)
+        if pc.endpoint and pc.endpoint != typed.strip().rstrip("/"):
+            ui.info(f"Using the resource endpoint [bold]{pc.endpoint}[/]")
         pc.deployment = prompts.text("Deployment name", default=pc.deployment or "")
-        pc.api_version = prompts.text("API version", default=pc.api_version or "2024-10-21")
+        pc.api_version = prompts.text("API version", default=pc.api_version or config.DEFAULT_AZURE_API_VERSION,
+                                      instruction="(the Azure OpenAI API version, not the model version)")
         pc.model = pc.deployment or pc.model
     if provider != "ollama" and not (pc.api_key or config.resolve_key(pc)):
-        pc.api_key = prompts.password("API key") or None
+        hint = "(leave empty to use your Azure sign-in: az login)" if provider == "azure" else None
+        pc.api_key = prompts.password("API key", instruction=hint) or None
+        if provider == "azure" and not pc.api_key:
+            ui.info(f"Using your {config.AZURE_SIGN_IN}: run [bold]az login[/] first if you haven't")
     if provider != "azure":
         models = config.suggested_models(provider) or [pc.model]
         pick = prompts.select("Model", [prompts.choice(m, m, "default" if m == pc.model else "") for m in models]

@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import tomllib
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -48,6 +49,7 @@ ENV_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 DEFAULT_AZURE_API_VERSION = "2025-04-01-preview"
+AZURE_SIGN_IN = "Azure sign-in (Entra ID)"
 OLLAMA_URL = "http://localhost:11434"
 
 
@@ -120,6 +122,39 @@ def suggested_models(provider: str, probe: bool = False) -> list[str]:
     return out
 
 
+def azure_endpoint_root(url: str | None) -> str | None:
+    """The resource root the Azure OpenAI client wants, from whatever the portal shows.
+
+    Accepts 'https://x.openai.azure.com', '.../openai/v1', '.../openai/v1/' or a full
+    '.../openai/deployments/d/chat/completions?api-version=...' URL; returns 'https://x.openai.azure.com'.
+    """
+    if not url or not url.strip():
+        return None
+    raw = url.strip()
+    if "://" not in raw:
+        raw = "https://" + raw
+    parts = urllib.parse.urlsplit(raw)
+    path = parts.path
+    cut = path.lower().find("/openai")
+    if cut >= 0:
+        path = path[:cut]
+    return urllib.parse.urlunsplit((parts.scheme, parts.netloc, path.rstrip("/"), "", ""))
+
+
+def key_source(cfg: ProviderConfig) -> str:
+    """Where the credential comes from, for display (never the key itself)."""
+    if cfg.provider == "ollama":
+        return "none needed (local)"
+    if cfg.api_key:
+        return "saved key"
+    for var in ENV_KEYS.get(cfg.provider, ()):
+        if os.environ.get(var):
+            return f"${var}"
+    if cfg.provider == "azure":
+        return AZURE_SIGN_IN
+    return "missing"
+
+
 def resolve_key(cfg: ProviderConfig) -> str | None:
     """The API key: from the config, else from the provider's environment variable."""
     if cfg.api_key:
@@ -165,13 +200,13 @@ def detect_providers(probe_ollama: bool = True) -> list[ProviderConfig]:
     found: list[ProviderConfig] = []
     if env.get("ANTHROPIC_API_KEY"):
         found.append(ProviderConfig("anthropic", DEFAULT_MODELS["anthropic"]))
-    if env.get("AZURE_OPENAI_API_KEY") and env.get("AZURE_OPENAI_ENDPOINT"):
+    if env.get("AZURE_OPENAI_ENDPOINT"):  # a key is optional: Azure sign-in (Entra ID) works without one
         dep = env.get("AZURE_OPENAI_DEPLOYMENT")
         found.append(
             ProviderConfig(
                 "azure",
                 dep or "",
-                endpoint=env["AZURE_OPENAI_ENDPOINT"],
+                endpoint=azure_endpoint_root(env["AZURE_OPENAI_ENDPOINT"]),
                 api_version=env.get("AZURE_OPENAI_API_VERSION") or DEFAULT_AZURE_API_VERSION,
                 deployment=dep,
             )

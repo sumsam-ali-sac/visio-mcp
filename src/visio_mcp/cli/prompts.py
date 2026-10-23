@@ -47,8 +47,8 @@ def text(message: str, default: str = "", instruction: str | None = None) -> str
     return _ask(questionary.text(message, default=default, style=QSTYLE, qmark="◆", instruction=instruction))
 
 
-def password(message: str) -> str:
-    return _ask(questionary.password(message, style=QSTYLE, qmark="◆"))
+def password(message: str, instruction: str | None = None) -> str:
+    return _ask(questionary.password(message, style=QSTYLE, qmark="◆", instruction=instruction))
 
 
 def confirm(message: str, default: bool = True) -> bool:

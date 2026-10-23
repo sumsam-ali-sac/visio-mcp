@@ -112,7 +112,7 @@ it.
 |---|---|---|---|
 | Claude (Anthropic) | `ANTHROPIC_API_KEY` | `claude-opus-5-5` | Also offered: `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`. Adaptive thinking, prompt caching. |
 | Google Gemini | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.5-pro` | |
-| Azure OpenAI | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, optional `AZURE_OPENAI_API_VERSION` | your deployment | |
+| Azure OpenAI | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, optional `AZURE_OPENAI_API_VERSION`; `AZURE_OPENAI_API_KEY`, or none to use your Azure sign-in | your deployment | No key? It signs in with Entra ID (`az login`, VS Code, managed identity); your account needs the **Cognitive Services OpenAI User** role. The portal's `…/openai/v1` endpoint URL works as-is. |
 | OpenAI | `OPENAI_API_KEY` | `gpt-5` | |
 | Ollama | a local server on `localhost:11434` (`OLLAMA_HOST`) | `qwen3:latest` | Pick any pulled model with tool calling. |
 

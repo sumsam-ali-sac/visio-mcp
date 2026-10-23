@@ -6,6 +6,7 @@ import re
 import shutil
 import tempfile
 import zipfile
+from contextlib import ExitStack
 from pathlib import Path
 
 from visio_mcp.icons import index, sources
@@ -64,12 +65,15 @@ def install(provider: str | None = None, source: str | None = None,
         wanted = [p]
     results: dict[str, int] = {}
     errors: list[str] = []
-    with tempfile.TemporaryDirectory(prefix="visio-mcp-icons-") as td:
+    # The ExitStack closes every zip opened during install before the temp folder is deleted;
+    # leftover locks (antivirus, indexers) must not fail an install that already succeeded.
+    with tempfile.TemporaryDirectory(prefix="visio-mcp-icons-", ignore_cleanup_errors=True) as td, \
+            ExitStack() as opened:
         tmp = Path(td)
         sources.clear_wheel_cache()
         if source:
             try:
-                entries, label = sources.entries_from(source, say, tmp)
+                entries, label = sources.entries_from(source, say, tmp, opened)
             except (OSError, zipfile.BadZipFile, ValueError) as e:
                 raise IconInstallError(f"could not read icons from {source}: {e}", _manual_hint(wanted[0])) from e
             names = [n for n, _ in entries]
@@ -94,7 +98,7 @@ def install(provider: str | None = None, source: str | None = None,
                     what = "the `diagrams` icon set (PyPI)" if src == "pypi" else "the official pack"
                     say(f"{PROVIDER_NAMES[p]}: trying {what}")
                     try:
-                        entries, label = sources.entries_from(src, say, tmp)
+                        entries, label = sources.entries_from(src, say, tmp, opened)
                         wheel_layout = src == "pypi"
                         picked = select(entries, p, wheel_layout)
                         if len(picked) < (1 if src == "pypi" else 15):  # a wrong or partial vendor zip

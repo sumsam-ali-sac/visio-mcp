@@ -8,7 +8,7 @@
 [![MCP server](https://img.shields.io/badge/MCP-server-7C9CFF)](https://modelcontextprotocol.io/)
 [![Visio](https://img.shields.io/badge/Visio-live%20or%20native%20.vsdx-3955A3?logo=microsoftvisio&logoColor=white)](docs/live-visio.md)
 [![AI](https://img.shields.io/badge/AI-Claude%20·%20Gemini%20·%20Azure%20OpenAI%20·%20OpenAI%20·%20Ollama-5EEAD4)](docs/cli.md#ai-providers)
-[![Tests](https://img.shields.io/badge/tests-1%2C243%20passing-4ADE80)](#%EF%B8%8F-development)
+[![Tests](https://img.shields.io/badge/tests-1%2C261%20passing-4ADE80)](#%EF%B8%8F-development)
 
 [Quick start](#-quick-start) · [See it](#-see-it-in-action) · [Features](#-what-makes-it-different) · [Diagram types](#%EF%B8%8F-14-diagram-types) · [Themes](#-8-themes) · [AI apps](#-use-it-from-your-ai-coding-app) · [Docs](#-documentation)
 
@@ -223,7 +223,7 @@ config folder. Keys found in your environment are picked up automatically.
 |---|---|---|
 | **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | `claude-opus-5-5` |
 | **Gemini** (Google) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.5-pro` |
-| **Azure OpenAI** | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` | your deployment |
+| **Azure OpenAI** | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and `AZURE_OPENAI_API_KEY` *or* your Azure sign-in (`az login`) | your deployment |
 | **OpenAI** | `OPENAI_API_KEY` | `gpt-5` |
 | **Ollama** (local) | running on `localhost:11434` | `qwen3:latest` |
 
@@ -518,7 +518,7 @@ cd visio-mcp
 uv sync
 
 uv run visio-ai                     # run the app from your checkout
-uv run pytest                       # 1,243 tests, no Visio needed
+uv run pytest                       # 1,261 tests, no Visio needed
 uv run pytest -m visio              # the Visio COM layer, on Windows with Visio
 uv run python scripts/smoke.py      # draw every example live, patch, inspect, export
 uv run python scripts/gen_docs.py   # regenerate reference docs (--gallery for images)

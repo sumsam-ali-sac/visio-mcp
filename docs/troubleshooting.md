@@ -34,6 +34,9 @@ name was used instead of overwriting.
 | Message | Fix |
 |---|---|
 | *check your API key: run visio-ai setup* | The key is missing, wrong or expired. |
+| *Azure OpenAI rejected the API key* | Key access may be disabled on the resource: run `visio-ai setup` and leave the key empty to use your Azure sign-in. |
+| *Could not get an Azure sign-in token* / *rejected your Azure sign-in* | Run `az login` (and `az account set --subscription …` for the right tenant). Your account needs the **Cognitive Services OpenAI User** role on the Azure OpenAI resource. |
+| *…rejected the request: function tools … reasoning_effort…* | Handled automatically: some reasoning models only accept tools with reasoning off, so visio-ai retries once with `reasoning_effort: "none"` and keeps it for the session. |
 | *rate limited* | Retried automatically three times; wait a minute or use a smaller model. |
 | *model not found* | Check the model id (`visio-ai setup` → Model), or for Azure the deployment name. |
 | *could not connect* | Network, proxy or endpoint URL. Ollama: is `ollama serve` running? |
@@ -42,6 +45,9 @@ The agent stops after 40 steps and submits what it has. Narrow the request with 
 pick fewer repositories.
 
 ## Cloud icons
+
+**`WinError 32` while installing icons on Windows.** Fixed: every icon zip is closed before the
+temporary folder is removed, and a file still locked by an antivirus scanner no longer fails the install.
 
 **`visio-ai icons install` can't reach the vendor site.** It falls back to the PyPI icons
 automatically. Behind a strict proxy, download the official zip in a browser and run

@@ -31,8 +31,10 @@ def _has_playwright() -> bool:
 def _provider_row() -> tuple[str, Text]:
     cfg = config.load_config()
     if cfg.provider:
-        key = bool(config.resolve_key(cfg.provider)) or cfg.provider.provider == "ollama"
-        return "AI provider", _mark(key, f"{cfg.provider.provider} · {cfg.provider.model}",
+        pc = cfg.provider
+        # Ollama needs no key; Azure without a key signs in with Entra ID (az login).
+        ok = bool(config.resolve_key(pc)) or pc.provider in ("ollama", "azure")
+        return "AI provider", _mark(ok, f"{pc.provider} · {pc.model} · {config.key_source(pc)}",
                                     "API key missing: run visio-ai setup")
     found = config.detect_providers(probe_ollama=True)
     return "AI provider", _mark(bool(found), "not set" + (
